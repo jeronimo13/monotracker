@@ -31,8 +31,7 @@ export const RulesPanel: React.FC<RulesPanelProps> = ({
   const hasActiveFilters = filters.description || 
     filters.mcc || 
     filters.mccCodes.length > 0 || 
-    filters.search || 
-    filters.dateRange;
+    filters.search;
 
   const uncategorizedCount = transactions.filter(tx => !tx.category).length;
 

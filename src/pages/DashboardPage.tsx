@@ -9,7 +9,7 @@ import {
   getCurrencyCode,
   getTransactionLabel,
 } from "../utils/formatters";
-import { getDateKey, calculateMonthPeriods } from "../utils/dateHelpers";
+import { getDateKey } from "../utils/dateHelpers";
 import { useAppData } from "../hooks/useAppData";
 import { useFilters } from "../hooks/useFilters";
 import { useRules } from "../hooks/useRules";
@@ -35,7 +35,6 @@ const DashboardPage: React.FC = () => {
     clearData,
     loadSampleData,
     importData,
-    exportData,
   } = useAppData();
 
   // UI state

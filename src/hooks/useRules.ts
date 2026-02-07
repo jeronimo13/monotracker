@@ -55,16 +55,6 @@ export const useRules = (): UseRulesReturn => {
           }
         }
 
-        // Check date range
-        if (filters.dateRange) {
-          if (filters.dateRange.start && transaction.time < filters.dateRange.start) {
-            return false;
-          }
-          if (filters.dateRange.end && transaction.time > filters.dateRange.end) {
-            return false;
-          }
-        }
-
         return true;
       }
     };
@@ -87,19 +77,6 @@ export const useRules = (): UseRulesReturn => {
     if (filters.search) {
       conditions.push(`опис або коментар містить "${filters.search}"`);
     }
-    if (filters.dateRange) {
-      const parts = [];
-      if (filters.dateRange.start) {
-        parts.push(`після ${new Date(filters.dateRange.start * 1000).toLocaleDateString()}`);
-      }
-      if (filters.dateRange.end) {
-        parts.push(`до ${new Date(filters.dateRange.end * 1000).toLocaleDateString()}`);
-      }
-      if (parts.length > 0) {
-        conditions.push(`дата ${parts.join(" і ")}`);
-      }
-    }
-
     return conditions.length > 0 
       ? `Застосовувати, коли: ${conditions.join(" І ")}`
       : "Застосовувати до всіх транзакцій";

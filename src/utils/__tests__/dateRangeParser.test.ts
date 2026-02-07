@@ -223,10 +223,12 @@ describe('Integration tests - preset values should parse correctly', () => {
     presets.forEach(preset => {
       const result = parseNaturalDateRange(preset.value);
       expect(result).toBeTruthy();
-      expect(result?.start).toBeDefined();
-      expect(result?.end).toBeDefined();
-      expect(result?.display).toBeDefined();
-      expect(result?.start).toBeLessThan(result.end);
+      expect(result).not.toBeNull();
+      if (!result) return;
+      expect(result.start).toBeDefined();
+      expect(result.end).toBeDefined();
+      expect(result.display).toBeDefined();
+      expect(result.start).toBeLessThan(result.end);
     });
   });
 

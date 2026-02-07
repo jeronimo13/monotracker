@@ -7,6 +7,7 @@ import { DateRangeProvider } from "./contexts/DateRangeContext";
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const basename = import.meta.env.BASE_URL;
 
   useEffect(() => {
     // Check if user has seen onboarding before
@@ -27,7 +28,7 @@ function App() {
   if (showOnboarding) {
     return (
       <DateRangeProvider>
-        <Router>
+        <Router basename={basename}>
           <Routes>
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/setup" element={<SetupPage />} />
@@ -41,7 +42,7 @@ function App() {
 
   return (
     <DateRangeProvider>
-      <Router>
+      <Router basename={basename}>
         <Routes>
           <Route 
             path="/onboarding" 

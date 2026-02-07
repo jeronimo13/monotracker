@@ -1,4 +1,4 @@
-import type { AppExport, Rule } from "../types";
+import type { AppExport } from "../types";
 
 export const exportToFile = (data: AppExport, filename?: string): void => {
   const exportData = {
@@ -84,21 +84,23 @@ export const importFromFile = (): Promise<AppExport> => {
   });
 };
 
-export const validateImportData = (data: any): data is AppExport => {
+export const validateImportData = (data: unknown): data is AppExport => {
   if (!data || typeof data !== 'object') {
     return false;
   }
 
-  if (!Array.isArray(data.transactions)) {
+  const maybeData = data as Partial<AppExport>;
+
+  if (!Array.isArray(maybeData.transactions)) {
     return false;
   }
 
-  if (!data.categories || typeof data.categories !== 'object') {
+  if (!maybeData.categories || typeof maybeData.categories !== 'object') {
     return false;
   }
 
   // Rules are optional for backward compatibility
-  if (data.rules && !Array.isArray(data.rules)) {
+  if (maybeData.rules && !Array.isArray(maybeData.rules)) {
     return false;
   }
 

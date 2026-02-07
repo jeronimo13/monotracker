@@ -27,8 +27,8 @@ interface DateRangeContextType {
   handleAllTimeSelect: () => void;
   
   // Refs for DateRangeFilter
-  inputRef: React.RefObject<HTMLInputElement>;
-  dropdownRef: React.RefObject<HTMLDivElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
   skipBlurRef: React.RefObject<boolean>;
   
   // Presets

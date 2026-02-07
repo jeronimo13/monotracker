@@ -28,7 +28,7 @@ const SetupPage: React.FC = () => {
         });
 
         if (response.ok) {
-          const data = await response.json();
+          await response.json();
           setValidationStatus("valid");
           setValidationError("");
         } else if (response.status === 401) {
@@ -41,7 +41,7 @@ const SetupPage: React.FC = () => {
           setValidationStatus("invalid");
           setValidationError(`Помилка API: ${response.status}`);
         }
-      } catch (error) {
+      } catch {
         setValidationStatus("invalid");
         setValidationError("Помилка мережі. Перевірте зʼєднання та спробуйте ще раз.");
       } finally {
