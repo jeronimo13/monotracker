@@ -265,12 +265,12 @@ const DashboardPage: React.FC = () => {
       {/* Left panel */}
       <div className="w-1/5 h-screen overflow-y-auto bg-gray-50 p-4 sticky top-0">
             {/* Date Range Filter */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <DateRangeFilter />
             </div>
 
             {/* Import/Export */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <ImportExportButtons
                 transactions={transactions}
                 categories={categories}
@@ -280,7 +280,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Rules Panel */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <RulesPanel
                 rules={rules}
                 filters={filters}
@@ -295,7 +295,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Special Filters */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <div className="flex flex-col gap-4">
                 <div>
                   <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <SidebarCategoryFacets
                 transactions={transactions}
                 selectedCategories={filters.categories}
@@ -349,7 +349,7 @@ const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <SidebarMccFacets
                 transactions={transactions}
                 selectedMccCodes={filters.mccCodes}
@@ -365,12 +365,12 @@ const DashboardPage: React.FC = () => {
       <div className="flex-1 h-screen overflow-y-auto p-4">
             <ApiConfigPanel onTokenUpdate={handleTokenUpdate} />
             
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div className="dashboard-panel p-6 mb-6">
               <StatisticsScene filteredTransactions={filteredTransactions} />
             </div>
 
             {/* Filters Bar */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="dashboard-panel p-4 mb-6">
               <div className="mb-4">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
@@ -522,7 +522,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="dashboard-panel overflow-hidden">
               <div className="px-6 py-4">
                 <TabSwitcher
                   activeTab={activeTab}

@@ -61,15 +61,15 @@ const OnboardingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl p-8 max-w-2xl w-full">
         {/* Feature slides */}
         <div className="text-center">
             <div className="text-6xl mb-6">{slides[currentSlide].icon}</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">
               {slides[currentSlide].title}
             </h1>
-            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-slate-300 mb-8 text-lg leading-relaxed">
               {slides[currentSlide].content}
             </p>
             
@@ -80,7 +80,7 @@ const OnboardingPage: React.FC = () => {
                   key={index}
                   onClick={() => setCurrentSlide(index)}
                   className={`w-3 h-3 rounded-full transition-colors ${
-                    index === currentSlide ? "bg-blue-600" : "bg-gray-300"
+                    index === currentSlide ? "bg-blue-600" : "bg-gray-300 dark:bg-slate-600"
                   }`}
                 />
               ))}
@@ -90,7 +90,7 @@ const OnboardingPage: React.FC = () => {
             <div className="flex justify-between items-center">
               <button
                 onClick={skipOnboarding}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 Пропустити
               </button>
@@ -99,7 +99,7 @@ const OnboardingPage: React.FC = () => {
                 <button
                   onClick={prevSlide}
                   disabled={currentSlide === 0}
-                  className="px-4 py-2 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-gray-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Назад
                 </button>

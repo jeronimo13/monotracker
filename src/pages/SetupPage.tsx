@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import type { StoredData } from "../types";
 
 const SetupPage: React.FC = () => {
   const [token, setToken] = useState("");
@@ -7,6 +8,42 @@ const SetupPage: React.FC = () => {
   const [validationStatus, setValidationStatus] = useState<"idle" | "valid" | "invalid">("idle");
   const [validationError, setValidationError] = useState("");
   const navigate = useNavigate();
+
+  const saveTokenToStorage = (rawToken: string) => {
+    const normalizedToken = rawToken.trim();
+    if (!normalizedToken) {
+      localStorage.removeItem("onboarding-token");
+      return;
+    }
+
+    try {
+      const existing = localStorage.getItem("monobankData");
+      const existingData = existing ? JSON.parse(existing) : {};
+
+      const nextData: StoredData = {
+        token: normalizedToken,
+        transactions: Array.isArray(existingData.transactions) ? existingData.transactions : [],
+        timestamp: Date.now(),
+        useRealData: Boolean(existingData.useRealData),
+        categories: existingData.categories && typeof existingData.categories === "object" ? existingData.categories : {},
+      };
+
+      localStorage.setItem("monobankData", JSON.stringify(nextData));
+      // Keep compatibility with previous onboarding flow key.
+      localStorage.setItem("onboarding-token", normalizedToken);
+    } catch {
+      const fallbackData: StoredData = {
+        token: normalizedToken,
+        transactions: [],
+        timestamp: Date.now(),
+        useRealData: false,
+        categories: {},
+      };
+
+      localStorage.setItem("monobankData", JSON.stringify(fallbackData));
+      localStorage.setItem("onboarding-token", normalizedToken);
+    }
+  };
 
   // Validate token when it changes
   useEffect(() => {
@@ -56,9 +93,7 @@ const SetupPage: React.FC = () => {
 
   const handleContinue = () => {
     // Save token if provided
-    if (token.trim()) {
-      localStorage.setItem("onboarding-token", token);
-    }
+    saveTokenToStorage(token);
     localStorage.setItem("hasSeenOnboarding", "true");
     navigate("/dashboard");
   };
@@ -69,21 +104,21 @@ const SetupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl p-8 max-w-2xl w-full">
         <div className="text-center">
           <div className="text-6xl mb-6">🏦</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-4">
             Підключити Monobank API
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-slate-300 mb-6">
             Підключіть свій Monobank акаунт для роботи з реальними транзакціями або використовуйте демо-дані для ознайомлення
           </p>
           
           {/* Steps */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-medium text-blue-900 mb-3">📋 Як підключити:</h3>
-            <div className="space-y-2 text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-slate-800 rounded-lg p-4 mb-6 text-left">
+            <h3 className="font-medium text-blue-900 dark:text-blue-200 mb-3">📋 Як підключити:</h3>
+            <div className="space-y-2 text-sm text-blue-800 dark:text-blue-100">
               <div className="flex items-start space-x-2">
                 <span className="font-medium">1️⃣</span>
                 <div>
@@ -112,7 +147,7 @@ const SetupPage: React.FC = () => {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Вставте ваш персональний токен..."
-                className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-500 ${
+                className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 text-gray-900 dark:text-slate-100 placeholder-gray-500 ${
                   validationStatus === "valid" 
                     ? "border-green-500 focus:ring-green-500 focus:border-transparent" 
                     : validationStatus === "invalid" 
@@ -144,19 +179,19 @@ const SetupPage: React.FC = () => {
 
             {/* Validation error message */}
             {validationError && (
-              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+              <div className="p-3 bg-red-100 dark:bg-red-950 border border-red-400 text-red-700 dark:text-red-200 rounded text-sm">
                 {validationError}
               </div>
             )}
 
             {/* Success message */}
             {validationStatus === "valid" && (
-              <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">
+              <div className="p-3 bg-green-100 dark:bg-green-950 border border-green-400 text-green-700 dark:text-green-200 rounded text-sm">
                 ✅ Токен підтверджено! Тепер ви можете працювати з реальними транзакціями
               </div>
             )}
             
-            <div className="text-sm text-gray-500 text-center">
+            <div className="text-sm text-gray-500 dark:text-slate-400 text-center">
               <p>🔒 Ваш токен зберігається локально і ніколи не передається третім особам</p>
             </div>
           </div>
@@ -176,7 +211,7 @@ const SetupPage: React.FC = () => {
             
             <button
               onClick={skipSetup}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 underline"
             >
               Використати демо-дані
             </button>

@@ -20,6 +20,24 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate })
         const data = JSON.parse(stored);
         setToken(data.token || "");
         setUseRealData(data.useRealData || false);
+        if (data.token) {
+          return;
+        }
+      }
+
+      const onboardingToken = localStorage.getItem("onboarding-token")?.trim();
+      if (onboardingToken) {
+        setToken(onboardingToken);
+
+        const existingData = stored ? JSON.parse(stored) : {};
+        localStorage.setItem("monobankData", JSON.stringify({
+          token: onboardingToken,
+          transactions: Array.isArray(existingData.transactions) ? existingData.transactions : [],
+          timestamp: Date.now(),
+          useRealData: Boolean(existingData.useRealData),
+          categories: existingData.categories && typeof existingData.categories === "object" ? existingData.categories : {},
+        }));
+        localStorage.removeItem("onboarding-token");
       }
     } catch (error) {
       console.error("Error loading token:", error);
@@ -148,7 +166,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate })
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div className="dashboard-panel p-6 mb-6">
       {/* Toggle API Block Button */}
       <div className="mb-4">
         <button

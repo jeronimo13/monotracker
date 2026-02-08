@@ -4,6 +4,8 @@ import OnboardingPage from "./pages/OnboardingPage";
 import SetupPage from "./pages/SetupPage";
 import DashboardPage from "./pages/DashboardPage";
 import { DateRangeProvider } from "./contexts/DateRangeContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import ThemeToggle from "./components/ThemeToggle";
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -24,49 +26,45 @@ function App() {
 
 
 
-  // If we need to show onboarding, redirect there
-  if (showOnboarding) {
-    return (
+  return (
+    <ThemeProvider>
+      <ThemeToggle />
       <DateRangeProvider>
         <Router basename={basename}>
-          <Routes>
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/setup" element={<SetupPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="*" element={<Navigate to="/onboarding" replace />} />
-          </Routes>
+          {showOnboarding ? (
+            <Routes>
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/setup" element={<SetupPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="*" element={<Navigate to="/onboarding" replace />} />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route 
+                path="/onboarding" 
+                element={<OnboardingPage />} 
+              />
+              <Route 
+                path="/setup" 
+                element={<SetupPage />} 
+              />
+              <Route 
+                path="/dashboard" 
+                element={<DashboardPage />} 
+              />
+              <Route 
+                path="/" 
+                element={<Navigate to="/dashboard" replace />} 
+              />
+              <Route 
+                path="*" 
+                element={<Navigate to="/dashboard" replace />} 
+              />
+            </Routes>
+          )}
         </Router>
       </DateRangeProvider>
-    );
-  }
-
-  return (
-    <DateRangeProvider>
-      <Router basename={basename}>
-        <Routes>
-          <Route 
-            path="/onboarding" 
-            element={<OnboardingPage />} 
-          />
-          <Route 
-            path="/setup" 
-            element={<SetupPage />} 
-          />
-          <Route 
-            path="/dashboard" 
-            element={<DashboardPage />} 
-          />
-          <Route 
-            path="/" 
-            element={<Navigate to="/dashboard" replace />} 
-          />
-          <Route 
-            path="*" 
-            element={<Navigate to="/dashboard" replace />} 
-          />
-        </Routes>
-      </Router>
-    </DateRangeProvider>
+    </ThemeProvider>
   );
 }
 

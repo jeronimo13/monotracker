@@ -27,6 +27,42 @@ export const useAppData = (): UseAppDataReturn => {
   }, []);
 
   const loadStoredData = () => {
+    // Backward compatibility: migrate onboarding token into primary storage.
+    try {
+      const onboardingToken = localStorage.getItem("onboarding-token")?.trim();
+      if (onboardingToken) {
+        const existing = localStorage.getItem("monobankData");
+        if (existing) {
+          const existingData = JSON.parse(existing);
+          if (!existingData.token) {
+            const migratedData: StoredData = {
+              token: onboardingToken,
+              transactions: Array.isArray(existingData.transactions) ? existingData.transactions : [],
+              timestamp: Date.now(),
+              useRealData: Boolean(existingData.useRealData),
+              categories:
+                existingData.categories && typeof existingData.categories === "object"
+                  ? existingData.categories
+                  : {},
+            };
+            localStorage.setItem("monobankData", JSON.stringify(migratedData));
+          }
+        } else {
+          const migratedData: StoredData = {
+            token: onboardingToken,
+            transactions: [],
+            timestamp: Date.now(),
+            useRealData: false,
+            categories: {},
+          };
+          localStorage.setItem("monobankData", JSON.stringify(migratedData));
+        }
+        localStorage.removeItem("onboarding-token");
+      }
+    } catch (error) {
+      console.error("Error migrating onboarding token:", error);
+    }
+
     try {
       const stored = localStorage.getItem("monobankData");
       if (stored) {
