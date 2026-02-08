@@ -402,10 +402,26 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Filters Bar */}
-            <div className="dashboard-panel px-3 py-2 mb-2 shrink-0">
-              <div className="mb-2">
-                <div className="flex items-center gap-2">
+            {/* Tab Content */}
+            <div className="dashboard-panel overflow-hidden flex-1 flex flex-col min-h-0">
+              <div className="px-3 py-2 shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <TabSwitcher
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    tabs={[
+                      { id: "transactions", label: "Список транзакцій" },
+                      { id: "monthly", label: "Щомісячний аналіз" },
+                    ]}
+                  />
+                  {activeTab === "transactions" && (
+                    <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
+                      {getTransactionLabel(totalCount)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 mb-2">
                   <div className="flex-1">
                     <input
                       type="text"
@@ -432,111 +448,51 @@ const DashboardPage: React.FC = () => {
                     </button>
                   )}
                 </div>
-              </div>
 
-              {/* Category Input */}
-              {showCategoryInput && (
-                <div className="mb-2 p-2 bg-purple-50 rounded">
-                  <div className="flex gap-2 relative">
-                    <div className="flex-1 relative">
-                      <input
-                        ref={categoryInputRef}
-                        type="text"
-                        value={newCategory}
-                        onChange={(e) => handleCategoryInputChange(e.target.value)}
-                        onKeyDown={handleCategoryKeyDown}
-                        placeholder="Введіть назву категорії"
-                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
-                      />
-                      {showCategoryDropdown && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                          {filteredCategories.map((category, index) => (
-                            <div
-                              key={category}
-                              className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 text-black ${
-                                index === selectedCategoryIndex
-                                  ? "bg-blue-100"
-                                  : ""
-                              }`}
-                              onClick={() => selectCategory(category)}
-                              onMouseEnter={() => setSelectedCategoryIndex(index)}
-                              onMouseLeave={() => setSelectedCategoryIndex(-1)}
-                            >
-                              {category}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                {/* Category Input */}
+                {showCategoryInput && (
+                  <div className="mb-2 p-2 bg-purple-50 rounded">
+                    <div className="flex gap-2 relative">
+                      <div className="flex-1 relative">
+                        <input
+                          ref={categoryInputRef}
+                          type="text"
+                          value={newCategory}
+                          onChange={(e) => handleCategoryInputChange(e.target.value)}
+                          onKeyDown={handleCategoryKeyDown}
+                          placeholder="Введіть назву категорії"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                        />
+                        {showCategoryDropdown && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredCategories.map((category, index) => (
+                              <div
+                                key={category}
+                                className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 text-black ${
+                                  index === selectedCategoryIndex
+                                    ? "bg-blue-100"
+                                    : ""
+                                }`}
+                                onClick={() => selectCategory(category)}
+                                onMouseEnter={() => setSelectedCategoryIndex(index)}
+                                onMouseLeave={() => setSelectedCategoryIndex(-1)}
+                              >
+                                {category}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={addCategoryToFilteredTransactions}
+                        className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                      >
+                        Додати
+                      </button>
                     </div>
-                    <button
-                      onClick={addCategoryToFilteredTransactions}
-                      className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                    >
-                      Додати
-                    </button>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {filters.description && (
-                  <ChipComponent
-                    label={`Опис: ${filters.description}`}
-                    variant="primary"
-                    removable
-                    onRemove={() => removeFilter("description")}
-                    size="medium"
-                  />
-                )}
-                {filters.mcc && (
-                  <ChipComponent
-                    label={`MCC: ${filters.mcc}`}
-                    variant="success"
-                    removable
-                    onRemove={() => removeFilter("mcc")}
-                    size="medium"
-                  />
-                )}
-                {filters.category && (
-                  <ChipComponent
-                    label={`Категорія: ${filters.category}`}
-                    variant="secondary"
-                    removable
-                    onRemove={() => removeFilter("category")}
-                    size="medium"
-                  />
-                )}
-                {filters.categories.map((category) => (
-                  <ChipComponent
-                    key={`facet-${category}`}
-                    label={`Фільтр: ${category}`}
-                    variant="primary"
-                    removable
-                    onRemove={() => toggleCategoryFacet(category)}
-                    size="medium"
-                  />
-                ))}
-                {filters.mccCodes.map((mccCode) => (
-                  <ChipComponent
-                    key={`mcc-facet-${mccCode}`}
-                    label={`MCC: ${mccCode}`}
-                    variant="success"
-                    removable
-                    onRemove={() => toggleMccFacet(mccCode)}
-                    size="medium"
-                  />
-                ))}
-                {filters.search && (
-                  <ChipComponent
-                    label={`Пошук: ${filters.search}`}
-                    variant="warning"
-                    removable
-                    onRemove={() =>
-                      setFilters((prev) => ({ ...prev, search: "" }))
-                    }
-                    size="medium"
-                  />
-                )}
                 {(filters.description ||
                   filters.mcc ||
                   filters.mccCodes.length > 0 ||
@@ -544,31 +500,72 @@ const DashboardPage: React.FC = () => {
                   filters.categories.length > 0 ||
                   filters.search
                 ) && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-xs text-gray-600 hover:text-gray-800 px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50"
-                  >
-                    Очистити все
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="dashboard-panel overflow-hidden flex-1 flex flex-col min-h-0">
-              <div className="px-3 py-2 shrink-0 flex items-center justify-between">
-                <TabSwitcher
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  tabs={[
-                    { id: "transactions", label: "Список транзакцій" },
-                    { id: "monthly", label: "Щомісячний аналіз" },
-                  ]}
-                />
-                {activeTab === "transactions" && (
-                  <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
-                    {getTransactionLabel(totalCount)}
-                  </span>
+                  <div className="flex flex-wrap gap-1.5 items-center mb-2">
+                    {filters.description && (
+                      <ChipComponent
+                        label={`Опис: ${filters.description}`}
+                        variant="primary"
+                        removable
+                        onRemove={() => removeFilter("description")}
+                        size="medium"
+                      />
+                    )}
+                    {filters.mcc && (
+                      <ChipComponent
+                        label={`MCC: ${filters.mcc}`}
+                        variant="success"
+                        removable
+                        onRemove={() => removeFilter("mcc")}
+                        size="medium"
+                      />
+                    )}
+                    {filters.category && (
+                      <ChipComponent
+                        label={`Категорія: ${filters.category}`}
+                        variant="secondary"
+                        removable
+                        onRemove={() => removeFilter("category")}
+                        size="medium"
+                      />
+                    )}
+                    {filters.categories.map((category) => (
+                      <ChipComponent
+                        key={`facet-${category}`}
+                        label={`Фільтр: ${category}`}
+                        variant="primary"
+                        removable
+                        onRemove={() => toggleCategoryFacet(category)}
+                        size="medium"
+                      />
+                    ))}
+                    {filters.mccCodes.map((mccCode) => (
+                      <ChipComponent
+                        key={`mcc-facet-${mccCode}`}
+                        label={`MCC: ${mccCode}`}
+                        variant="success"
+                        removable
+                        onRemove={() => toggleMccFacet(mccCode)}
+                        size="medium"
+                      />
+                    ))}
+                    {filters.search && (
+                      <ChipComponent
+                        label={`Пошук: ${filters.search}`}
+                        variant="warning"
+                        removable
+                        onRemove={() =>
+                          setFilters((prev) => ({ ...prev, search: "" }))
+                        }
+                        size="medium"
+                      />
+                    )}
+                    <button
+                      onClick={clearAllFilters}
+                      className="text-xs text-gray-600 hover:text-gray-800 px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50"
+                    >
+                      Очистити все
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -577,7 +574,7 @@ const DashboardPage: React.FC = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
-                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[1%] whitespace-nowrap">
                           Дата
                         </th>
                         <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -615,8 +612,8 @@ const DashboardPage: React.FC = () => {
                                 index % 2 === 0 ? "bg-white" : "bg-gray-50"
                               } hover:bg-gray-100 transition-colors duration-150`}
                             >
-                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-900">
-                                <div className="flex items-center space-x-1">
+                              <td className="px-2 py-1.5 whitespace-nowrap text-xs text-gray-900">
+                                <div className="flex items-center space-x-0.5">
                                   <span>{formatDate(transaction.time)}</span>
                                   {transaction.hold && (
                                     <Tooltip content="Транзакція утримана (не завершена)">
@@ -753,7 +750,7 @@ const DashboardPage: React.FC = () => {
             </div>
               </>
             )}
-      </div>
+          </div>
     </div>
   );
 };
