@@ -29,6 +29,15 @@ export const useUrlFilters = ({
   const isUpdatingUrl = useRef(false);
   const hasInitialized = useRef(false);
   const lastUrlString = useRef(searchParams.toString());
+  const managedFilterKeys = new Set([
+    "description",
+    "mcc",
+    "mccCodes",
+    "category",
+    "categories",
+    "search",
+    "dateRange",
+  ]);
 
   // Update URL when filters change
   const updateUrlFromFilters = useCallback(() => {
@@ -38,7 +47,15 @@ export const useUrlFilters = ({
     }
     
     const dateRangeString = getCurrentDateRangeUrlString(inputValue);
-    const params = filtersToUrlParams(filters, dateRangeString);
+    const filterParams = filtersToUrlParams(filters, dateRangeString);
+    const params = new URLSearchParams(searchParams);
+
+    // Preserve non-filter query params (e.g. view=settings) and replace only managed filter keys.
+    managedFilterKeys.forEach((key) => params.delete(key));
+    filterParams.forEach((value, key) => {
+      params.set(key, value);
+    });
+
     const newUrlString = params.toString();
     
     // Only update if there are actual filter changes

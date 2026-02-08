@@ -173,3 +173,134 @@ a:hover {
   border: 1px solid rgba(71, 85, 105, 0.35);
   box-shadow: none;
 }
+
+/* Settings page reusable styles */
+.settings-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #111827;
+  background-color: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.settings-input::placeholder {
+  color: #9ca3af;
+}
+
+:root.dark .settings-input {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #f8fafc;
+}
+:root.dark .settings-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+}
+:root.dark .settings-input::placeholder {
+  color: #64748b;
+}
+
+.settings-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  background-color: #334155;
+  transition: background-color 0.15s;
+}
+.settings-btn-primary:hover {
+  background-color: #475569;
+}
+.settings-btn-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #6366f1;
+}
+.settings-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:root.dark .settings-btn-primary {
+  background-color: #475569;
+}
+:root.dark .settings-btn-primary:hover {
+  background-color: #64748b;
+}
+
+.settings-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background-color: #fff;
+  border: 1px solid #d1d5db;
+  transition: background-color 0.15s;
+}
+.settings-btn-secondary:hover {
+  background-color: #f9fafb;
+}
+.settings-btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #6366f1;
+}
+.settings-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:root.dark .settings-btn-secondary {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+:root.dark .settings-btn-secondary:hover {
+  background-color: #334155;
+}
+
+/* Dark mode for danger zone */
+:root.dark .border-red-200 {
+  border-color: #7f1d1d;
+}
+:root.dark .bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.25);
+}
+:root.dark .text-red-800 {
+  color: #fca5a5;
+}
+:root.dark .hover\:bg-red-50:hover {
+  background-color: rgba(127, 29, 29, 0.35);
+}
+
+:root.dark .border-blue-200 {
+  border-color: #1e3a5f;
+}
+:root.dark .bg-blue-100 {
+  background-color: rgba(30, 58, 95, 0.3);
+}
+:root.dark .text-blue-700 {
+  color: #93c5fd;
+}
+
+:root.dark .border-green-200 {
+  border-color: #14532d;
+}
+:root.dark .bg-green-50 {
+  background-color: rgba(20, 83, 45, 0.25);
+}

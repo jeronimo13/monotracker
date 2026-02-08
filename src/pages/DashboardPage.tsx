@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import mccData from "../data/mcc.json";
 import type { Transaction, AppExport } from "../types";
 import {
@@ -47,6 +48,8 @@ const DashboardPage: React.FC = () => {
   const categoryInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number>(-1);
   const [activeTab, setActiveTab] = useState<string>("transactions");
+  const [searchParams] = useSearchParams();
+  const isSettingsView = searchParams.get("view") === "settings";
 
   // Filtering hook
   const {
@@ -263,20 +266,11 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Left panel */}
+      {!isSettingsView && (
       <div className="w-1/5 h-screen overflow-y-auto bg-gray-50 p-4 sticky top-0">
             {/* Date Range Filter */}
             <div className="dashboard-panel p-4 mb-6">
               <DateRangeFilter />
-            </div>
-
-            {/* Import/Export */}
-            <div className="dashboard-panel p-4 mb-6">
-              <ImportExportButtons
-                transactions={transactions}
-                categories={categories}
-                rules={rules}
-                onImport={handleImport}
-              />
             </div>
 
             {/* Rules Panel */}
@@ -360,11 +354,37 @@ const DashboardPage: React.FC = () => {
               />
             </div>
           </div>
+      )}
 
       {/* Right panel */}
       <div className="flex-1 h-screen overflow-y-auto p-4">
-            <ApiConfigPanel onTokenUpdate={handleTokenUpdate} />
-            
+            {isSettingsView ? (
+              <div className="mx-auto max-w-2xl py-2">
+                <div className="mb-8">
+                  <h1 className="text-2xl font-bold text-gray-900">Налаштування</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Керуйте підключенням до API, імпортом та експортом даних.
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="dashboard-panel p-6">
+                    <ImportExportButtons
+                      transactions={transactions}
+                      categories={categories}
+                      rules={rules}
+                      onImport={handleImport}
+                    />
+                  </div>
+
+                  <ApiConfigPanel
+                    onTokenUpdate={handleTokenUpdate}
+                    hasTransactions={transactions.length > 0}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
             <div className="dashboard-panel p-6 mb-6">
               <StatisticsScene filteredTransactions={filteredTransactions} />
             </div>
@@ -718,6 +738,8 @@ const DashboardPage: React.FC = () => {
                 <MonthlyBreakdown transactions={filteredTransactions} />
               )}
             </div>
+              </>
+            )}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ const ThemeToggle: React.FC = () => {
       onClick={toggleTheme}
       aria-label={isDarkTheme ? "Увімкнути світлу тему" : "Увімкнути темну тему"}
       title={isDarkTheme ? "Світла тема" : "Темна тема"}
-      className={`fixed right-4 top-4 z-50 inline-flex h-10 w-20 items-center rounded-full border-2 px-2.5 shadow-lg transition-all hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+      className={`relative inline-flex h-10 w-20 items-center rounded-full border-2 px-2.5 shadow-lg transition-all hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
         isDarkTheme
           ? "border-slate-500 bg-slate-900 shadow-slate-900/35"
           : "border-amber-300 bg-amber-50 shadow-amber-900/20"
