@@ -146,6 +146,34 @@ a:hover {
   border-color: #334155;
 }
 
+/* Sky chips (MCC) */
+:root.dark .bg-sky-100 {
+  background-color: rgba(14, 165, 233, 0.15);
+}
+:root.dark .text-sky-700 {
+  color: #7dd3fc;
+}
+:root.dark .border-sky-200 {
+  border-color: rgba(14, 165, 233, 0.3);
+}
+:root.dark .hover\:bg-sky-200:hover {
+  background-color: rgba(14, 165, 233, 0.25);
+}
+
+/* Violet chips (Category) */
+:root.dark .bg-violet-100 {
+  background-color: rgba(139, 92, 246, 0.15);
+}
+:root.dark .text-violet-700 {
+  color: #c4b5fd;
+}
+:root.dark .border-violet-200 {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+:root.dark .hover\:bg-violet-200:hover {
+  background-color: rgba(139, 92, 246, 0.25);
+}
+
 :root.dark .text-gray-900 {
   color: #f8fafc;
 }

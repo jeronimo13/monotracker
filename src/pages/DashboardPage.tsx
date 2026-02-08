@@ -197,23 +197,15 @@ const DashboardPage: React.FC = () => {
   };
 
 
-  // Auto-show category input when filters are applied
+  // Auto-show category input when search has content
   useEffect(() => {
-    const hasFilters =
-      filters.description || filters.mcc || filters.category || filters.search;
-    if (hasFilters && filteredTransactions.length > 0 && !showCategoryInput) {
+    const shouldShow = filters.search && filteredTransactions.length > 0;
+    if (shouldShow && !showCategoryInput) {
       setShowCategoryInput(true);
-      const hasSpecificFilters =
-        filters.description || filters.mcc || filters.category;
-      if (hasSpecificFilters) {
-        setTimeout(() => {
-          if (categoryInputRef.current) {
-            categoryInputRef.current.focus();
-          }
-        }, 100);
-      }
+    } else if (!filters.search && showCategoryInput) {
+      setShowCategoryInput(false);
     }
-  }, [filters, filteredTransactions.length, showCategoryInput]);
+  }, [filters.search, filteredTransactions.length, showCategoryInput]);
 
   // Group transactions by date
   const groupedTransactions = filteredTransactions.reduce(
@@ -393,9 +385,8 @@ const DashboardPage: React.FC = () => {
               </div>
             ) : (
               <>
-            {/* Stats bar + controls */}
-            <div className="dashboard-panel px-3 py-2 mb-2 shrink-0 flex items-center justify-between">
-              <StatisticsScene filteredTransactions={filteredTransactions} />
+            {/* Controls bar */}
+            <div className="dashboard-panel px-3 py-2 mb-2 shrink-0 flex items-center justify-end">
               <div className="flex items-center gap-2">
                 <SettingsButton />
                 <ThemeToggle />
@@ -414,11 +405,14 @@ const DashboardPage: React.FC = () => {
                       { id: "monthly", label: "Щомісячний аналіз" },
                     ]}
                   />
-                  {activeTab === "transactions" && (
-                    <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
-                      {getTransactionLabel(totalCount)}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-4 ml-4">
+                    <StatisticsScene filteredTransactions={filteredTransactions} />
+                    {activeTab === "transactions" && (
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        {getTransactionLabel(totalCount)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
@@ -571,7 +565,7 @@ const DashboardPage: React.FC = () => {
 
               {activeTab === "transactions" && (
                 <div className="overflow-y-auto flex-1">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200 tabular-nums">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[1%] whitespace-nowrap">
@@ -587,9 +581,6 @@ const DashboardPage: React.FC = () => {
                           Категорія
                         </th>
                         <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Сума в валюті
-                        </th>
-                        <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Сума
                         </th>
                       </tr>
@@ -599,7 +590,7 @@ const DashboardPage: React.FC = () => {
                         <React.Fragment key={dateKey}>
                           <tr className="bg-gray-100">
                             <td
-                              colSpan={6}
+                              colSpan={5}
                               className="px-3 py-1 text-xs font-medium text-gray-900"
                             >
                               {formatDateHeader(dateKey)}
@@ -683,30 +674,21 @@ const DashboardPage: React.FC = () => {
                                   )}
                                 </div>
                               </td>
-                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
-                                <button
-                                  onClick={() =>
-                                    addFilter("category", transaction.category || "")
-                                  }
-                                  className="text-purple-600 hover:text-purple-800 hover:underline cursor-pointer"
-                                >
-                                  {transaction.category || "-"}
-                                </button>
-                              </td>
-                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right text-gray-600">
-                                {transaction.operationAmount !== transaction.amount ? (
-                                  <span>
-                                    {transaction.operationAmount > 0 ? "+" : ""}
-                                    {formatOriginalAmount(transaction.operationAmount)}
-                                    <span className="text-xs ml-1">
-                                      {getCurrencyCode(transaction.currencyCode)}
-                                    </span>
-                                  </span>
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs">
+                                {transaction.category ? (
+                                  <button
+                                    onClick={() =>
+                                      addFilter("category", transaction.category || "")
+                                    }
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 border border-violet-200 hover:bg-violet-200 transition-colors cursor-pointer"
+                                  >
+                                    {transaction.category}
+                                  </button>
                                 ) : (
-                                  "-"
+                                  <span className="text-gray-400">-</span>
                                 )}
                               </td>
-                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right">
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right tabular-nums">
                                 <Tooltip content={
                                   [
                                     `Сума: ${formatAmount(transaction.amount)}`,
@@ -716,22 +698,31 @@ const DashboardPage: React.FC = () => {
                                     transaction.operationAmount !== transaction.amount && `В валюті операції: ${formatOriginalAmount(transaction.operationAmount)} ${getCurrencyCode(transaction.currencyCode)}`
                                   ].filter(Boolean).join('\n')
                                 }>
-                                  <span
-                                    className={`font-medium cursor-help ${
-                                      transaction.amount > 0
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                    }`}
-                                  >
-                                    {transaction.amount > 0 ? "+" : ""}
-                                    {formatAmount(transaction.amount)}
+                                  <span className="cursor-help">
+                                    <span
+                                      className={`font-medium ${
+                                        transaction.amount > 0
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {transaction.amount > 0 ? "+" : ""}
+                                      {formatAmount(transaction.amount)}
+                                    </span>
+                                    {transaction.operationAmount !== transaction.amount && (
+                                      <span className="text-gray-500 ml-1.5">
+                                        ({transaction.operationAmount > 0 ? "+" : ""}
+                                        {formatOriginalAmount(transaction.operationAmount)}{" "}
+                                        {getCurrencyCode(transaction.currencyCode)})
+                                      </span>
+                                    )}
+                                    {transaction.cashbackAmount > 0 && (
+                                      <span className="text-green-500 ml-1.5">
+                                        +{formatAmount(transaction.cashbackAmount)} CB
+                                      </span>
+                                    )}
                                   </span>
                                 </Tooltip>
-                                {transaction.cashbackAmount > 0 && (
-                                  <div className="text-green-500 text-xs">
-                                    Кешбек: {formatAmount(transaction.cashbackAmount)}
-                                  </div>
-                                )}
                               </td>
                             </tr>
                           ))}
