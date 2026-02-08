@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import mccData from "../data/mcc.json";
-import type { AccountSource, AppExport, ClientInfo, Rule, Transaction } from "../types";
+import type {
+  AccountSource,
+  AppExport,
+  ClientInfo,
+  Filters,
+  Rule,
+  Transaction,
+  TransactionGroupingMode,
+} from "../types";
 import { getTransactionLabel } from "../utils/formatters";
 import { getDateKey } from "../utils/dateHelpers";
 import { useAppData } from "../hooks/useAppData";
@@ -22,6 +30,66 @@ import SettingsButton from "../components/SettingsButton";
 import TerminalStatusBar, { type TerminalStatusMessage } from "../components/TerminalStatusBar";
 import VirtualizedTransactionsTable from "../components/VirtualizedTransactionsTable";
 import { readStoredData } from "../utils/storageData";
+
+const TRANSACTION_GROUPING_STORAGE_KEY = "monobank-transaction-grouping-mode";
+const ALL_TRANSACTIONS_GROUP_KEY = "__all_transactions__";
+
+const TRANSACTION_GROUPING_OPTIONS: Array<{
+  value: TransactionGroupingMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "day",
+    label: "По днях",
+    description: "Показувати транзакції з заголовками по датах.",
+  },
+  {
+    value: "month",
+    label: "По місяцях",
+    description: "Показувати транзакції з заголовками по місяцях.",
+  },
+  {
+    value: "none",
+    label: "Ніяк",
+    description: "Не групувати, показувати суцільний список транзакцій.",
+  },
+];
+
+const isTransactionGroupingMode = (value: string | null): value is TransactionGroupingMode => {
+  return value === "day" || value === "month" || value === "none";
+};
+
+const getInitialTransactionGroupingMode = (): TransactionGroupingMode => {
+  if (typeof window === "undefined") {
+    return "day";
+  }
+
+  const storedMode = localStorage.getItem(TRANSACTION_GROUPING_STORAGE_KEY);
+  return isTransactionGroupingMode(storedMode) ? storedMode : "day";
+};
+
+const getMonthGroupingKey = (timestamp: number): string => {
+  const date = new Date(timestamp * 1000);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+const getGroupSortTimestamp = (groupKey: string, mode: TransactionGroupingMode): number => {
+  if (mode === "month") {
+    const [yearRaw, monthRaw] = groupKey.split("-");
+    const year = Number(yearRaw);
+    const monthIndex = Number(monthRaw) - 1;
+    return new Date(year, monthIndex, 1).getTime();
+  }
+
+  if (mode === "day") {
+    return new Date(groupKey).getTime();
+  }
+
+  return 0;
+};
 
 const DashboardPage: React.FC = () => {
   // Core data hooks
@@ -49,6 +117,9 @@ const DashboardPage: React.FC = () => {
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number>(-1);
   const [activeTab, setActiveTab] = useState<string>("transactions");
   const [dateSortDirection, setDateSortDirection] = useState<"asc" | "desc">("desc");
+  const [transactionGroupingMode, setTransactionGroupingMode] = useState<TransactionGroupingMode>(
+    getInitialTransactionGroupingMode
+  );
   const [terminalStatus, setTerminalStatus] = useState<TerminalStatusMessage>({
     level: "info",
     text: "Система готова. Очікую на синхронізацію з Monobank.",
@@ -142,6 +213,20 @@ const DashboardPage: React.FC = () => {
     clearAllFilters();
   };
 
+  const handleTableAddFilter = (type: keyof Filters, value: string) => {
+    addFilter(type, value);
+
+    if (type === "search" || type === "mcc") {
+      if (!showCategoryInput) {
+        setShowCategoryInput(true);
+      }
+
+      requestAnimationFrame(() => {
+        categoryInputRef.current?.focus();
+      });
+    }
+  };
+
   const handleCategoryInputChange = (value: string) => {
     setNewCategory(value);
     setSelectedCategoryIndex(-1);
@@ -224,15 +309,21 @@ const DashboardPage: React.FC = () => {
   };
 
 
-  // Auto-show category input when search has content
+  // Auto-show category input when search or MCC filter has content
   useEffect(() => {
-    const shouldShow = filters.search && filteredTransactions.length > 0;
+    const shouldShow =
+      (Boolean(filters.search) || Boolean(filters.mcc)) &&
+      filteredTransactions.length > 0;
     if (shouldShow && !showCategoryInput) {
       setShowCategoryInput(true);
-    } else if (!filters.search && showCategoryInput) {
+    } else if (!filters.search && !filters.mcc && showCategoryInput) {
       setShowCategoryInput(false);
     }
-  }, [filters.search, filteredTransactions.length, showCategoryInput]);
+  }, [filters.search, filters.mcc, filteredTransactions.length, showCategoryInput]);
+
+  useEffect(() => {
+    localStorage.setItem(TRANSACTION_GROUPING_STORAGE_KEY, transactionGroupingMode);
+  }, [transactionGroupingMode]);
 
   // Group transactions by date
   const sortedTransactions = useMemo(() => {
@@ -247,7 +338,12 @@ const DashboardPage: React.FC = () => {
     () =>
       sortedTransactions.reduce(
         (groups, transaction) => {
-          const dateKey = getDateKey(transaction.time);
+          const dateKey =
+            transactionGroupingMode === "month"
+              ? getMonthGroupingKey(transaction.time)
+              : transactionGroupingMode === "none"
+                ? ALL_TRANSACTIONS_GROUP_KEY
+                : getDateKey(transaction.time);
           if (!groups[dateKey]) {
             groups[dateKey] = [];
           }
@@ -256,17 +352,25 @@ const DashboardPage: React.FC = () => {
         },
         {} as { [key: string]: Transaction[] }
       ),
-    [sortedTransactions]
+    [sortedTransactions, transactionGroupingMode]
   );
 
   const sortedDates = useMemo(
-    () =>
-      Object.keys(groupedTransactions).sort((a, b) =>
+    () => {
+      const keys = Object.keys(groupedTransactions);
+      if (transactionGroupingMode === "none") {
+        return keys;
+      }
+
+      return keys.sort((a, b) =>
         dateSortDirection === "desc"
-          ? new Date(b).getTime() - new Date(a).getTime()
-          : new Date(a).getTime() - new Date(b).getTime()
-      ),
-    [groupedTransactions, dateSortDirection]
+          ? getGroupSortTimestamp(b, transactionGroupingMode) -
+            getGroupSortTimestamp(a, transactionGroupingMode)
+          : getGroupSortTimestamp(a, transactionGroupingMode) -
+            getGroupSortTimestamp(b, transactionGroupingMode)
+      );
+    },
+    [groupedTransactions, dateSortDirection, transactionGroupingMode]
   );
 
   const totalCount = filteredTransactions.length;
@@ -444,6 +548,38 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-6">
+                  <div className="dashboard-panel p-6">
+                    <h2 className="text-base font-semibold text-gray-900">Групування транзакцій</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Оберіть, як групувати список транзакцій у вкладці "Список транзакцій".
+                    </p>
+                    <div className="mt-4 space-y-2">
+                      {TRANSACTION_GROUPING_OPTIONS.map((option) => (
+                        <label
+                          key={option.value}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                            transactionGroupingMode === option.value
+                              ? "border-blue-300 bg-blue-50"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="transaction-grouping-mode"
+                            value={option.value}
+                            checked={transactionGroupingMode === option.value}
+                            onChange={() => setTransactionGroupingMode(option.value)}
+                            className="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{option.label}</p>
+                            <p className="text-xs text-gray-500">{option.description}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="dashboard-panel p-6">
                     <ImportExportButtons
                       transactions={transactions}
@@ -657,13 +793,14 @@ const DashboardPage: React.FC = () => {
                 <VirtualizedTransactionsTable
                   sortedDates={sortedDates}
                   groupedTransactions={groupedTransactions}
+                  groupingMode={transactionGroupingMode}
                   dateSortDirection={dateSortDirection}
                   onToggleDateSort={() =>
                     setDateSortDirection((prev) =>
                       prev === "desc" ? "asc" : "desc"
                     )
                   }
-                  onAddFilter={addFilter}
+                  onAddFilter={handleTableAddFilter}
                   getMccDescription={getMccDescription}
                 />
               )}

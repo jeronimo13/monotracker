@@ -439,7 +439,7 @@ export const mergeTransactionsByOrigin = (
     };
   }
 
-  if (dataOrigin === "imported") {
+  if (dataOrigin === "imported" || dataOrigin === "real") {
     const existingById = new Set(existingTransactions.map((tx) => tx.id));
     const toAdd = uniqueFetched.filter((tx) => !existingById.has(tx.id));
     return {
@@ -451,27 +451,11 @@ export const mergeTransactionsByOrigin = (
     };
   }
 
-  const mergedById = new Map<string, Transaction>();
-  existingTransactions.forEach((tx) => {
-    mergedById.set(tx.id, tx);
-  });
-
-  let added = 0;
-  let updated = 0;
-  uniqueFetched.forEach((tx) => {
-    if (mergedById.has(tx.id)) {
-      updated += 1;
-    } else {
-      added += 1;
-    }
-    mergedById.set(tx.id, tx);
-  });
-
   return {
-    transactions: sortTransactionsDesc(Array.from(mergedById.values())),
+    transactions: sortTransactionsDesc(existingTransactions),
     stats: {
-      added,
-      updated,
+      added: 0,
+      updated: 0,
     },
   };
 };

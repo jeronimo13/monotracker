@@ -111,6 +111,12 @@ export const useAppData = (): UseAppDataReturn => {
   const [categories, setCategoriesState] = useState<{ [key: string]: string }>({});
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const syncPromiseRef = useRef<Promise<void> | null>(null);
+  const transactionsRef = useRef<Transaction[]>([]);
+
+  const setTransactionsWithRef = useCallback((nextTransactions: Transaction[]) => {
+    transactionsRef.current = nextTransactions;
+    setTransactionsState(nextTransactions);
+  }, []);
 
   const loadStoredData = useCallback(() => {
     // Backward compatibility: migrate onboarding token into primary storage.
@@ -144,7 +150,7 @@ export const useAppData = (): UseAppDataReturn => {
 
         // Check if stored data is less than 24 hours old
         if (now - stored.timestamp < oneDay) {
-          setTransactionsState(stored.transactions);
+          setTransactionsWithRef(stored.transactions);
           setCategoriesState(stored.categories || {});
           return;
         }
@@ -160,9 +166,9 @@ export const useAppData = (): UseAppDataReturn => {
     const demoTransactions = generateDemoTransactions();
     const demoStorage = createDemoStoredData(demoTransactions);
     writeStoredData(demoStorage);
-    setTransactionsState(demoTransactions);
+    setTransactionsWithRef(demoTransactions);
     setCategoriesState({});
-  }, []);
+  }, [setTransactionsWithRef]);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -214,19 +220,19 @@ export const useAppData = (): UseAppDataReturn => {
     localStorage.removeItem(MONOBANK_DATA_KEY);
     localStorage.removeItem("hasSeenOnboarding");
     localStorage.removeItem(ONBOARDING_TOKEN_KEY);
-    setTransactionsState([]);
+    setTransactionsWithRef([]);
     setCategoriesState({});
   };
 
   const loadSampleData = () => {
     const demoTransactions = generateDemoTransactions();
     writeStoredData(createDemoStoredData(demoTransactions));
-    setTransactionsState(demoTransactions);
+    setTransactionsWithRef(demoTransactions);
     setCategoriesState({});
   };
 
   const importData = (data: AppData) => {
-    setTransactionsState(data.transactions);
+    setTransactionsWithRef(data.transactions);
     setCategoriesState(data.categories);
 
     const existing = readStoredData();
@@ -260,7 +266,7 @@ export const useAppData = (): UseAppDataReturn => {
   };
 
   const setTransactions = (newTransactions: Transaction[]) => {
-    setTransactionsState(newTransactions);
+    setTransactionsWithRef(newTransactions);
   };
 
   const setCategories = (newCategories: { [key: string]: string }) => {
@@ -289,7 +295,8 @@ export const useAppData = (): UseAppDataReturn => {
           return;
         }
 
-        const baseTransactions = stored.transactions;
+        const baseTransactions =
+          transactionsRef.current.length > 0 ? transactionsRef.current : stored.transactions;
         const baseOrigin: DataOrigin = resolveSyncOrigin(stored);
         const syncStartedAt = Date.now();
         setIsSyncing(true);
@@ -330,11 +337,11 @@ export const useAppData = (): UseAppDataReturn => {
             onStatus: onStatusChange,
             onProgress: (progress: SyncProgress) => {
               const partialMerged = mergeTransactionsByOrigin(
-                baseTransactions,
+                transactionsRef.current,
                 progress.transactionsSnapshot,
                 baseOrigin
               );
-              setTransactionsState(partialMerged.transactions);
+              setTransactionsWithRef(partialMerged.transactions);
 
               onStatusChange?.({
                 level: "info",
@@ -345,7 +352,12 @@ export const useAppData = (): UseAppDataReturn => {
             nextAllowedRequestAt,
           });
 
-          setTransactionsState(syncResult.transactions);
+          const finalMerged = mergeTransactionsByOrigin(
+            transactionsRef.current,
+            syncResult.transactions,
+            baseOrigin
+          );
+          setTransactionsWithRef(finalMerged.transactions);
           const syncFinishedAt = Date.now();
 
           updateStoredData((current) => {
@@ -354,7 +366,7 @@ export const useAppData = (): UseAppDataReturn => {
               token,
               useRealData: true,
               clientInfo,
-              transactions: syncResult.transactions,
+              transactions: finalMerged.transactions,
               dataOrigin: baseOrigin === "imported" ? "imported" : "real",
               accountSourceMap: mergeAccountSourceMap(current.accountSourceMap, clientInfo.accounts, source),
               sync: {
@@ -403,7 +415,7 @@ export const useAppData = (): UseAppDataReturn => {
       syncPromiseRef.current = promise;
       return promise;
     },
-    []
+    [setTransactionsWithRef]
   );
 
   const connectToken = useCallback(

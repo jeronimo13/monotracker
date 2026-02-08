@@ -262,6 +262,44 @@ describe("syncMonobankTransactions", () => {
     expect(result.mergeStats.updated).toBe(0);
   });
 
+  test("keeps existing real-data transactions unchanged and only appends missing transactions", async () => {
+    jest.spyOn(Date, "now").mockReturnValue(NOW_UNIX * 1000);
+    const existingTransactions: Transaction[] = [
+      {
+        ...createLocalTx("dup", "account-1", NOW_UNIX - 100, -5000),
+        category: "Мій тег",
+      },
+    ];
+
+    const fetchStatement = jest
+      .fn<Promise<MonobankStatementTransaction[]>, [string, string, number, number]>()
+      .mockResolvedValueOnce([
+        createStatementTx("dup", NOW_UNIX - 100, -9999),
+        createStatementTx("new-1", NOW_UNIX - 50, -1111),
+      ]);
+
+    const result = await syncMonobankTransactions({
+      token: "token-1",
+      clientInfo: createClientInfo(),
+      existingTransactions,
+      dataOrigin: "real",
+      windowDays: 1,
+      requestIntervalMs: 0,
+      fetchStatement,
+    });
+
+    const mergedDupTx = result.transactions.find((tx) => tx.id === "dup");
+    const newTx = result.transactions.find((tx) => tx.id === "new-1");
+
+    expect(mergedDupTx).toBeTruthy();
+    expect(mergedDupTx?.amount).toBe(-5000);
+    expect(mergedDupTx?.description).toBe("Local dup");
+    expect(mergedDupTx?.category).toBe("Мій тег");
+    expect(newTx).toBeTruthy();
+    expect(result.mergeStats.added).toBe(1);
+    expect(result.mergeStats.updated).toBe(0);
+  });
+
   test("waits for next allowed request time and emits cooldown status", async () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date("2026-02-08T10:00:00.000Z"));

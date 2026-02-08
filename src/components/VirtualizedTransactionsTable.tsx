@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Filters, Transaction } from "../types";
+import type { Filters, Transaction, TransactionGroupingMode } from "../types";
 import {
   formatAmount,
   formatOriginalAmount,
   formatDate,
+  formatDateTime,
   formatDateHeader,
   getCurrencyCode,
 } from "../utils/formatters";
@@ -12,6 +13,7 @@ import Tooltip from "./Tooltip";
 interface VirtualizedTransactionsTableProps {
   sortedDates: string[];
   groupedTransactions: Record<string, Transaction[]>;
+  groupingMode: TransactionGroupingMode;
   dateSortDirection: "asc" | "desc";
   onToggleDateSort: () => void;
   onAddFilter: (type: keyof Filters, value: string) => void;
@@ -37,6 +39,30 @@ const DATE_HEADER_ESTIMATED_HEIGHT = 28;
 const TRANSACTION_ESTIMATED_HEIGHT = 62;
 const OVERSCAN_ROWS = 20;
 
+const formatTransactionCountLabel = (count: number): string => {
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${count} транзакцій`;
+  }
+  if (lastDigit === 1) {
+    return `${count} транзакція`;
+  }
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${count} транзакції`;
+  }
+  return `${count} транзакцій`;
+};
+
+const formatMonthHeader = (monthKey: string): string => {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const monthIndex = Number(monthRaw) - 1;
+  const date = new Date(year, monthIndex, 1);
+  return date.toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
+};
+
 const findRowIndexByOffset = (offsets: number[], targetOffset: number): number => {
   const rowCount = offsets.length - 1;
   if (rowCount <= 0) {
@@ -61,6 +87,7 @@ const findRowIndexByOffset = (offsets: number[], targetOffset: number): number =
 const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> = ({
   sortedDates,
   groupedTransactions,
+  groupingMode,
   dateSortDirection,
   onToggleDateSort,
   onAddFilter,
@@ -76,12 +103,14 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
     const rows: VirtualRow[] = [];
 
     sortedDates.forEach((dateKey) => {
-      rows.push({
-        id: `date-${dateKey}`,
-        kind: "date",
-        dateKey,
-        estimatedHeight: DATE_HEADER_ESTIMATED_HEIGHT,
-      });
+      if (groupingMode !== "none") {
+        rows.push({
+          id: `date-${dateKey}`,
+          kind: "date",
+          dateKey,
+          estimatedHeight: DATE_HEADER_ESTIMATED_HEIGHT,
+        });
+      }
 
       const transactionsForDate = groupedTransactions[dateKey] || [];
       transactionsForDate.forEach((transaction, indexInDate) => {
@@ -96,7 +125,7 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
     });
 
     return rows;
-  }, [sortedDates, groupedTransactions]);
+  }, [sortedDates, groupedTransactions, groupingMode]);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -190,6 +219,20 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
     }
   }, []);
 
+  const groupSummaries = useMemo(
+    () =>
+      Object.keys(groupedTransactions).reduce((acc, groupKey) => {
+        const transactions = groupedTransactions[groupKey] || [];
+        const totalAmount = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+        acc[groupKey] = {
+          count: transactions.length,
+          totalAmount,
+        };
+        return acc;
+      }, {} as Record<string, { count: number; totalAmount: number }>),
+    [groupedTransactions]
+  );
+
   return (
     <div ref={scrollContainerRef} className="overflow-y-auto flex-1">
       <table className="min-w-full divide-y divide-gray-200 tabular-nums">
@@ -243,6 +286,8 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
 
           {visibleRows.map((row) => {
             if (row.kind === "date") {
+              const groupSummary = groupSummaries[row.dateKey] ?? { count: 0, totalAmount: 0 };
+
               return (
                 <tr
                   key={row.id}
@@ -252,7 +297,16 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
                   }}
                 >
                   <td colSpan={6} className="px-3 py-1 text-xs font-medium text-gray-900">
-                    {formatDateHeader(row.dateKey)}
+                    <div className="flex items-center justify-between gap-3">
+                      <span>
+                        {groupingMode === "month"
+                          ? formatMonthHeader(row.dateKey)
+                          : formatDateHeader(row.dateKey)}
+                      </span>
+                      <span className="text-[11px] font-medium text-gray-600 whitespace-nowrap">
+                        {formatTransactionCountLabel(groupSummary.count)} • {formatAmount(groupSummary.totalAmount)}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               );
@@ -274,7 +328,11 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
               >
                 <td className="px-2 py-1.5 whitespace-nowrap text-xs text-gray-900">
                   <div className="flex items-center space-x-0.5">
-                    <span>{formatDate(transaction.time)}</span>
+                    <span>
+                      {groupingMode === "none"
+                        ? formatDateTime(transaction.time)
+                        : formatDate(transaction.time)}
+                    </span>
                     {transaction.hold && (
                       <Tooltip content="Транзакція утримана (не завершена)">
                         <span className="text-yellow-600 text-xs">⏳</span>
@@ -311,7 +369,7 @@ const VirtualizedTransactionsTable: React.FC<VirtualizedTransactionsTableProps> 
                         .join("\n")}
                     >
                       <button
-                        onClick={() => onAddFilter("description", transaction.description)}
+                        onClick={() => onAddFilter("search", transaction.description)}
                         className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
                       >
                         {transaction.description}

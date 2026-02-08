@@ -20,6 +20,16 @@ export const formatDate = (timestamp: number) => {
   });
 };
 
+export const formatDateTime = (timestamp: number) => {
+  return new Date(timestamp * 1000).toLocaleString("uk-UA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export const formatDateHeader = (dateKey: string) => {
   const date = new Date(dateKey);
   const weekday = date.toLocaleDateString("uk-UA", { weekday: "long" });

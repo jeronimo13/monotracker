@@ -24,6 +24,7 @@ export type DataOrigin = "demo" | "real" | "imported";
 export type AccountSource = "onboarding" | "settings";
 export type SyncStatus = "idle" | "syncing" | "cooldown" | "error";
 export type StatusLevel = "info" | "success" | "error";
+export type TransactionGroupingMode = "day" | "month" | "none";
 
 export interface StatusUpdate {
   level: StatusLevel;

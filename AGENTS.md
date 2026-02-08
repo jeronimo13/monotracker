@@ -129,3 +129,10 @@ If this file conflicts with `README.md`, trust `package.json`, config files, and
   - `src/pages/DashboardPage.tsx`
 - If you change scripts or toolchain behavior, update this file with confirmed command outcomes.
 - Do not reintroduce `CLAUDE.md`; keep agent guidance in this `AGENTS.md`.
+
+## Collaboration Memory (Persistent)
+
+- Maintain `docs/collaboration-memory.md` on every relevant turn.
+- Add new assistant mistakes to `## Mistake Log` as numbered items.
+- Add user preferences to `## What User Likes` as bullet items.
+- Keep the existing history intact unless the user explicitly asks to edit/remove entries.

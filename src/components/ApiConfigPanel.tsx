@@ -317,6 +317,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({
     localStorage.removeItem("hasSeenOnboarding");
     localStorage.removeItem(ONBOARDING_TOKEN_KEY);
     localStorage.removeItem("monobank-theme");
+    localStorage.removeItem("monobank-transaction-grouping-mode");
 
     setToken("");
     setError("");
