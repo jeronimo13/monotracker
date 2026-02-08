@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import mccData from "../data/mcc.json";
-import type { Transaction, AppExport } from "../types";
+import type { AccountSource, AppExport, ClientInfo, Rule, Transaction } from "../types";
 import {
   formatAmount,
   formatOriginalAmount,
@@ -27,6 +27,8 @@ import { ApiConfigPanel } from "../components/ApiConfigPanel";
 import { DateRangeFilter } from "../components/DateRangeFilter";
 import ThemeToggle from "../components/ThemeToggle";
 import SettingsButton from "../components/SettingsButton";
+import TerminalStatusBar, { type TerminalStatusMessage } from "../components/TerminalStatusBar";
+import { readStoredData } from "../utils/storageData";
 
 const DashboardPage: React.FC = () => {
   // Core data hooks
@@ -38,6 +40,9 @@ const DashboardPage: React.FC = () => {
     clearData,
     loadSampleData,
     importData,
+    connectToken,
+    syncTransactions,
+    isSyncing,
   } = useAppData();
 
   // UI state
@@ -50,8 +55,26 @@ const DashboardPage: React.FC = () => {
   const categoryInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number>(-1);
   const [activeTab, setActiveTab] = useState<string>("transactions");
+  const [dateSortDirection, setDateSortDirection] = useState<"asc" | "desc">("desc");
+  const [terminalStatus, setTerminalStatus] = useState<TerminalStatusMessage>({
+    level: "info",
+    text: "Система готова. Очікую на синхронізацію з Monobank.",
+    timestamp: Date.now(),
+  });
   const [searchParams] = useSearchParams();
   const isSettingsView = searchParams.get("view") === "settings";
+  const hasAutoSyncTriggeredRef = useRef(false);
+  const resolveTransactionSource = useCallback(
+    (transaction: Transaction): string => transaction.accountId,
+    []
+  );
+
+  const updateTerminalStatus = useCallback((status: Omit<TerminalStatusMessage, "timestamp">) => {
+    setTerminalStatus({
+      ...status,
+      timestamp: Date.now(),
+    });
+  }, []);
 
   // Filtering hook
   const {
@@ -67,7 +90,12 @@ const DashboardPage: React.FC = () => {
     setMccFacetOnly,
     clearMccFacets,
     filteredTransactions,
-  } = useFilters(transactions, showUncategorized, showWithdrawalsOnly);
+  } = useFilters(
+    transactions,
+    showUncategorized,
+    showWithdrawalsOnly,
+    resolveTransactionSource
+  );
 
   // Rules hook
   const {
@@ -79,19 +107,25 @@ const DashboardPage: React.FC = () => {
     applyRules,
   } = useRules();
 
-  // Handle API token updates from ApiConfigPanel
-  const handleTokenUpdate = (newTransactions: Transaction[]) => {
-    if (newTransactions.length === 1 && newTransactions[0] === -1 as any) {
-      // Special signal to load sample data
-      loadSampleData();
-    } else if (newTransactions.length === 0) {
-      // Clear all data
-      clearData();
-    } else {
-      // New transactions from API
-      setTransactions(newTransactions);
-    }
-  };
+  const handleTokenConnected = useCallback(
+    async (payload: { token: string; clientInfo: ClientInfo; source: AccountSource }) => {
+      await connectToken({
+        token: payload.token,
+        clientInfo: payload.clientInfo,
+        source: payload.source,
+        onStatusChange: updateTerminalStatus,
+      });
+    },
+    [connectToken, updateTerminalStatus]
+  );
+
+  const handleUseSampleData = useCallback(() => {
+    loadSampleData();
+  }, [loadSampleData]);
+
+  const handleClearData = useCallback(() => {
+    clearData();
+  }, [clearData]);
 
 
   const addCategoryToFilteredTransactions = () => {
@@ -208,20 +242,38 @@ const DashboardPage: React.FC = () => {
   }, [filters.search, filteredTransactions.length, showCategoryInput]);
 
   // Group transactions by date
-  const groupedTransactions = filteredTransactions.reduce(
-    (groups, transaction) => {
-      const dateKey = getDateKey(transaction.time);
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(transaction);
-      return groups;
-    },
-    {} as { [key: string]: Transaction[] }
+  const sortedTransactions = useMemo(() => {
+    const copy = [...filteredTransactions];
+    copy.sort((a, b) =>
+      dateSortDirection === "desc" ? b.time - a.time : a.time - b.time
+    );
+    return copy;
+  }, [filteredTransactions, dateSortDirection]);
+
+  const groupedTransactions = useMemo(
+    () =>
+      sortedTransactions.reduce(
+        (groups, transaction) => {
+          const dateKey = getDateKey(transaction.time);
+          if (!groups[dateKey]) {
+            groups[dateKey] = [];
+          }
+          groups[dateKey].push(transaction);
+          return groups;
+        },
+        {} as { [key: string]: Transaction[] }
+      ),
+    [sortedTransactions]
   );
 
-  const sortedDates = Object.keys(groupedTransactions).sort(
-    (a, b) => new Date(b).getTime() - new Date(a).getTime()
+  const sortedDates = useMemo(
+    () =>
+      Object.keys(groupedTransactions).sort((a, b) =>
+        dateSortDirection === "desc"
+          ? new Date(b).getTime() - new Date(a).getTime()
+          : new Date(a).getTime() - new Date(b).getTime()
+      ),
+    [groupedTransactions, dateSortDirection]
   );
 
   const totalCount = filteredTransactions.length;
@@ -231,11 +283,11 @@ const DashboardPage: React.FC = () => {
   };
 
   // Rules handling
-  const handleCreateRule = (rule: any) => {
+  const handleCreateRule = (rule: Rule) => {
     addRule(rule);
   };
 
-  const handlePreviewRule = (rule: any) => {
+  const handlePreviewRule = (rule: Rule) => {
     previewRuleApplication(rule, transactions);
   };
 
@@ -257,8 +309,39 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (hasAutoSyncTriggeredRef.current || isSyncing) {
+      return;
+    }
+
+    const stored = readStoredData();
+    if (!stored) {
+      return;
+    }
+
+    const hasToken = typeof stored.token === "string" && stored.token.trim() !== "";
+    const needsInitialSync = Boolean(stored.sync?.needsInitialSync);
+    const hasSuccessfulSync = typeof stored.sync?.lastSuccessfulSyncAt === "number";
+    const wasInterruptedSync =
+      stored.sync?.status === "syncing" || stored.sync?.status === "cooldown";
+    const shouldForceResume = wasInterruptedSync;
+
+    if (!hasToken || (!needsInitialSync && hasSuccessfulSync && !shouldForceResume)) {
+      return;
+    }
+
+    hasAutoSyncTriggeredRef.current = true;
+    void syncTransactions({
+      source: "onboarding",
+      force: shouldForceResume,
+      onStatusChange: updateTerminalStatus,
+    }).catch((error) => {
+      console.error("Auto-sync failed:", error);
+    });
+  }, [isSyncing, syncTransactions, updateTerminalStatus]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex pb-12">
       {/* Left panel */}
       {!isSettingsView && (
       <div className="w-1/5 h-screen overflow-y-auto bg-gray-50 p-3 sticky top-0">
@@ -374,12 +457,16 @@ const DashboardPage: React.FC = () => {
                       categories={categories}
                       rules={rules}
                       onImport={handleImport}
+                      onStatusChange={updateTerminalStatus}
                     />
                   </div>
 
                   <ApiConfigPanel
-                    onTokenUpdate={handleTokenUpdate}
+                    onTokenConnected={handleTokenConnected}
+                    onUseSampleData={handleUseSampleData}
+                    onClearData={handleClearData}
                     hasTransactions={transactions.length > 0}
+                    onStatusChange={updateTerminalStatus}
                   />
                 </div>
               </div>
@@ -492,6 +579,7 @@ const DashboardPage: React.FC = () => {
                   filters.mccCodes.length > 0 ||
                   filters.category ||
                   filters.categories.length > 0 ||
+                  filters.source ||
                   filters.search
                 ) && (
                   <div className="flex flex-wrap gap-1.5 items-center mb-2">
@@ -519,6 +607,15 @@ const DashboardPage: React.FC = () => {
                         variant="secondary"
                         removable
                         onRemove={() => removeFilter("category")}
+                        size="medium"
+                      />
+                    )}
+                    {filters.source && (
+                      <ChipComponent
+                        label={`Джерело (accountId): ${filters.source}`}
+                        variant="warning"
+                        removable
+                        onRemove={() => removeFilter("source")}
                         size="medium"
                       />
                     )}
@@ -569,7 +666,30 @@ const DashboardPage: React.FC = () => {
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
                         <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[1%] whitespace-nowrap">
-                          Дата
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDateSortDirection((prev) =>
+                                prev === "desc" ? "asc" : "desc"
+                              )
+                            }
+                            className="inline-flex items-center gap-1 hover:text-gray-700"
+                            title={`Сортування за датою: ${
+                              dateSortDirection === "desc"
+                                ? "спочатку новіші"
+                                : "спочатку старіші"
+                            }`}
+                            aria-label={`Змінити сортування за датою. Зараз: ${
+                              dateSortDirection === "desc"
+                                ? "спочатку новіші"
+                                : "спочатку старіші"
+                            }`}
+                          >
+                            <span>Дата</span>
+                            <span className="text-[10px] leading-none">
+                              {dateSortDirection === "desc" ? "▼" : "▲"}
+                            </span>
+                          </button>
                         </th>
                         <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Опис
@@ -579,6 +699,9 @@ const DashboardPage: React.FC = () => {
                         </th>
                         <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Категорія
+                        </th>
+                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Джерело (accountId)
                         </th>
                         <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Сума
@@ -590,7 +713,7 @@ const DashboardPage: React.FC = () => {
                         <React.Fragment key={dateKey}>
                           <tr className="bg-gray-100">
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="px-3 py-1 text-xs font-medium text-gray-900"
                             >
                               {formatDateHeader(dateKey)}
@@ -601,7 +724,7 @@ const DashboardPage: React.FC = () => {
                               key={transaction.id}
                               className={`${
                                 index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                              } hover:bg-gray-100 transition-colors duration-150`}
+                              } hover:bg-gray-100`}
                             >
                               <td className="px-2 py-1.5 whitespace-nowrap text-xs text-gray-900">
                                 <div className="flex items-center space-x-0.5">
@@ -666,7 +789,10 @@ const DashboardPage: React.FC = () => {
                                     {transaction.mcc || "-"}
                                   </button>
                                   {getMccDescription(transaction.mcc) && (
-                                    <Tooltip content={getMccDescription(transaction.mcc)}>
+                                    <Tooltip
+                                      content={getMccDescription(transaction.mcc)}
+                                      className="ml-1"
+                                    >
                                       <div className="text-xs text-gray-400 truncate max-w-32 pointer-events-none">
                                         {getMccDescription(transaction.mcc)}
                                       </div>
@@ -687,6 +813,15 @@ const DashboardPage: React.FC = () => {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
+                              </td>
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
+                                <button
+                                  onClick={() => addFilter("source", transaction.accountId)}
+                                  className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                  title={`Фільтрувати за accountId: ${transaction.accountId}`}
+                                >
+                                  {transaction.accountId}
+                                </button>
                               </td>
                               <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right tabular-nums">
                                 <Tooltip content={
@@ -741,6 +876,7 @@ const DashboardPage: React.FC = () => {
             </div>
               </>
             )}
+          <TerminalStatusBar message={terminalStatus} />
           </div>
     </div>
   );

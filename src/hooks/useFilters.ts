@@ -24,13 +24,15 @@ const initialFilters: Filters = {
   mccCodes: [],
   category: "",
   categories: [],
+  source: "",
   search: "",
 };
 
 export const useFilters = (
   transactions: Transaction[],
   showUncategorized: boolean = false,
-  showWithdrawalsOnly: boolean = false
+  showWithdrawalsOnly: boolean = false,
+  resolveTransactionSource?: (transaction: Transaction) => string
 ): UseFiltersReturn => {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const { dateRange, inputValue, setDateRange, setInputValue } = useDateRange();
@@ -56,6 +58,7 @@ export const useFilters = (
         case 'description':
         case 'mcc':
         case 'category':
+        case 'source':
         case 'search':
           newFilters[type] = '';
           break;
@@ -156,6 +159,9 @@ export const useFilters = (
             .toLowerCase()
             .includes(filters.search.toLowerCase()));
 
+      const transactionSource = resolveTransactionSource ? resolveTransactionSource(transaction) : "unknown";
+      const sourceMatch = !filters.source || transactionSource === filters.source;
+
       // Date range filtering (from useDateRange hook)
       const dateRangeMatch = 
         !dateRange ||
@@ -175,13 +181,14 @@ export const useFilters = (
         mccCodesFacetMatch &&
         categoryMatch &&
         categoriesFacetMatch &&
+        sourceMatch &&
         searchMatch &&
         dateRangeMatch &&
         uncategorizedMatch &&
         withdrawalsMatch
       );
     });
-  }, [transactions, filters, dateRange, showUncategorized, showWithdrawalsOnly]);
+  }, [transactions, filters, dateRange, showUncategorized, showWithdrawalsOnly, resolveTransactionSource]);
 
   return {
     filters,

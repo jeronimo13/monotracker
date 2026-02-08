@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import type { AppExport, Rule } from "../types";
 import { exportToFile, importFromFile } from "../utils/fileOperations";
+import type { TerminalStatusMessage } from "./TerminalStatusBar";
 
 interface ImportExportButtonsProps {
   transactions: any[];
   categories: { [key: string]: string };
   rules: Rule[];
   onImport: (data: AppExport) => void;
+  onStatusChange?: (status: Omit<TerminalStatusMessage, "timestamp">) => void;
 }
 
 export const ImportExportButtons: React.FC<ImportExportButtonsProps> = ({
@@ -14,6 +16,7 @@ export const ImportExportButtons: React.FC<ImportExportButtonsProps> = ({
   categories,
   rules,
   onImport,
+  onStatusChange,
 }) => {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string>("");
@@ -26,6 +29,10 @@ export const ImportExportButtons: React.FC<ImportExportButtonsProps> = ({
     };
     
     exportToFile(exportData);
+    onStatusChange?.({
+      level: "success",
+      text: "Експорт завершено: JSON-файл збережено.",
+    });
   };
 
   const handleImport = async () => {
@@ -35,12 +42,25 @@ export const ImportExportButtons: React.FC<ImportExportButtonsProps> = ({
 
     setIsImporting(true);
     setImportError("");
+    onStatusChange?.({
+      level: "info",
+      text: "Імпорт даних розпочато...",
+    });
 
     try {
       const importedData = await importFromFile();
       onImport(importedData);
+      onStatusChange?.({
+        level: "success",
+        text: "Імпорт завершено успішно.",
+      });
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : "Імпорт не вдався");
+      const errorMessage = error instanceof Error ? error.message : "Імпорт не вдався";
+      setImportError(errorMessage);
+      onStatusChange?.({
+        level: "error",
+        text: `Помилка імпорту: ${errorMessage}`,
+      });
     } finally {
       setIsImporting(false);
     }

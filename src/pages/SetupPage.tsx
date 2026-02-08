@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import type { StoredData } from "../types";
+import { createDefaultSyncState, ONBOARDING_TOKEN_KEY, updateStoredData } from "../utils/storageData";
 
 const SetupPage: React.FC = () => {
   const [token, setToken] = useState("");
@@ -12,36 +12,27 @@ const SetupPage: React.FC = () => {
   const saveTokenToStorage = (rawToken: string) => {
     const normalizedToken = rawToken.trim();
     if (!normalizedToken) {
-      localStorage.removeItem("onboarding-token");
+      localStorage.removeItem(ONBOARDING_TOKEN_KEY);
       return;
     }
 
     try {
-      const existing = localStorage.getItem("monobankData");
-      const existingData = existing ? JSON.parse(existing) : {};
-
-      const nextData: StoredData = {
+      updateStoredData((current) => ({
+        ...current,
         token: normalizedToken,
-        transactions: Array.isArray(existingData.transactions) ? existingData.transactions : [],
+        useRealData: true,
+        sync: {
+          ...(current.sync ?? createDefaultSyncState()),
+          status: "idle",
+          needsInitialSync: true,
+          lastError: undefined,
+        },
         timestamp: Date.now(),
-        useRealData: Boolean(existingData.useRealData),
-        categories: existingData.categories && typeof existingData.categories === "object" ? existingData.categories : {},
-      };
-
-      localStorage.setItem("monobankData", JSON.stringify(nextData));
+      }));
       // Keep compatibility with previous onboarding flow key.
-      localStorage.setItem("onboarding-token", normalizedToken);
+      localStorage.setItem(ONBOARDING_TOKEN_KEY, normalizedToken);
     } catch {
-      const fallbackData: StoredData = {
-        token: normalizedToken,
-        transactions: [],
-        timestamp: Date.now(),
-        useRealData: false,
-        categories: {},
-      };
-
-      localStorage.setItem("monobankData", JSON.stringify(fallbackData));
-      localStorage.setItem("onboarding-token", normalizedToken);
+      localStorage.setItem(ONBOARDING_TOKEN_KEY, normalizedToken);
     }
   };
 

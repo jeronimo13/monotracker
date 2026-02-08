@@ -35,6 +35,7 @@ export const useUrlFilters = ({
     "mccCodes",
     "category",
     "categories",
+    "source",
     "search",
     "dateRange",
   ]);
@@ -84,6 +85,7 @@ export const useUrlFilters = ({
       mccCodes: urlFilters.mccCodes || [],
       category: urlFilters.category || '',
       categories: urlFilters.categories || [],
+      source: urlFilters.source || '',
       search: urlFilters.search || '',
     };
     

@@ -1,122 +1,257 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { TrashIcon, BeakerIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-
-interface ClientInfo {
-  clientId: string;
-  name: string;
-  accounts: {
-    id: string;
-    type: string;
-    currencyCode: number;
-    maskedPan?: string[];
-    iban: string;
-  }[];
-}
+import type {
+  AccountSource,
+  AccountSourceMap,
+  ClientInfo,
+  MonobankAccount,
+} from "../types";
+import { fetchMonobankClientInfo } from "../services/monobankApi";
+import {
+  createDefaultSyncState,
+  ONBOARDING_TOKEN_KEY,
+  readStoredData,
+  updateStoredData,
+} from "../utils/storageData";
+import type { TerminalStatusMessage } from "./TerminalStatusBar";
 
 interface ApiConfigPanelProps {
-  onTokenUpdate: (newTransactions: any[]) => void;
+  onTokenConnected: (payload: {
+    token: string;
+    clientInfo: ClientInfo;
+    source: AccountSource;
+  }) => void | Promise<void>;
+  onUseSampleData: () => void;
+  onClearData: () => void;
   hasTransactions: boolean;
+  onStatusChange?: (status: Omit<TerminalStatusMessage, "timestamp">) => void;
 }
 
-export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, hasTransactions }) => {
+const getCurrencyIsoCode = (currencyCode: number): string => {
+  switch (currencyCode) {
+    case 980:
+      return "UAH";
+    case 840:
+      return "USD";
+    case 978:
+      return "EUR";
+    case 985:
+      return "PLN";
+    default:
+      return "UAH";
+  }
+};
+
+const formatMoney = (amount: number | undefined, currencyCode: number): string => {
+  const normalizedAmount = typeof amount === "number" ? amount : 0;
+  return new Intl.NumberFormat("uk-UA", {
+    style: "currency",
+    currency: getCurrencyIsoCode(currencyCode),
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(normalizedAmount / 100);
+};
+
+const formatAccountType = (type: string): string => {
+  switch (type) {
+    case "black":
+      return "Чорна картка";
+    case "white":
+      return "Біла картка";
+    case "platinum":
+      return "Platinum";
+    case "fop":
+      return "ФОП";
+    case "yellow":
+      return "Жовта картка";
+    case "jar":
+      return "Банка";
+    default:
+      return type;
+  }
+};
+
+const formatAccountSource = (source: AccountSource | undefined): string => {
+  if (source === "settings") {
+    return "налаштування";
+  }
+  if (source === "onboarding") {
+    return "онбординг";
+  }
+  return "невідомо";
+};
+
+const mergeAccountSourceMap = (
+  currentMap: AccountSourceMap,
+  accounts: MonobankAccount[],
+  source: AccountSource
+): AccountSourceMap => {
+  const nextMap: AccountSourceMap = { ...currentMap };
+  const now = Date.now();
+
+  accounts.forEach((account) => {
+    if (!nextMap[account.id]) {
+      nextMap[account.id] = {
+        source,
+        addedAt: now,
+      };
+    }
+  });
+
+  return nextMap;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Не вдалося перевірити токен";
+};
+
+export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({
+  onTokenConnected,
+  onUseSampleData,
+  onClearData,
+  hasTransactions,
+  onStatusChange,
+}) => {
   const [token, setToken] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [useRealData, setUseRealData] = useState<boolean>(false);
   const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+  const [accountSourceMap, setAccountSourceMap] = useState<AccountSourceMap>({});
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load token and client info from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("monobankData");
+      const stored = readStoredData();
       if (stored) {
-        const data = JSON.parse(stored);
-        setToken(data.token || "");
-        setUseRealData(data.useRealData || false);
-        if (data.clientInfo) {
-          setClientInfo(data.clientInfo);
-        }
-        if (data.token) {
+        setToken(stored.token || "");
+        setUseRealData(stored.useRealData || false);
+        setClientInfo(stored.clientInfo ?? null);
+        setAccountSourceMap(stored.accountSourceMap ?? {});
+        if (stored.token) {
           return;
         }
       }
 
-      const onboardingToken = localStorage.getItem("onboarding-token")?.trim();
+      const onboardingToken = localStorage.getItem(ONBOARDING_TOKEN_KEY)?.trim();
       if (onboardingToken) {
         setToken(onboardingToken);
-
-        const existingData = stored ? JSON.parse(stored) : {};
-        localStorage.setItem("monobankData", JSON.stringify({
+        updateStoredData((current) => ({
+          ...current,
           token: onboardingToken,
-          transactions: Array.isArray(existingData.transactions) ? existingData.transactions : [],
           timestamp: Date.now(),
-          useRealData: Boolean(existingData.useRealData),
-          categories: existingData.categories && typeof existingData.categories === "object" ? existingData.categories : {},
+          sync: {
+            ...(current.sync ?? createDefaultSyncState()),
+            status: "idle",
+            needsInitialSync: true,
+            lastError: undefined,
+          },
         }));
-        localStorage.removeItem("onboarding-token");
+        localStorage.removeItem(ONBOARDING_TOKEN_KEY);
       }
-    } catch (error) {
-      console.error("Error loading token:", error);
+    } catch (loadError) {
+      console.error("Error loading token:", loadError);
     }
   }, []);
 
-  const updateStoredData = (updates: Record<string, unknown>) => {
-    try {
-      const stored = localStorage.getItem("monobankData");
-      const data = stored ? JSON.parse(stored) : {
-        token: "",
-        transactions: [],
-        timestamp: Date.now(),
-        useRealData: false,
-        categories: {},
-      };
-      Object.assign(data, updates, { timestamp: Date.now() });
-      localStorage.setItem("monobankData", JSON.stringify(data));
-    } catch (error) {
-      console.error("Error updating stored data:", error);
-    }
-  };
+  const fetchClientInfo = useCallback(
+    async (tokenValue: string) => {
+      if (!tokenValue.trim()) {
+        setClientInfo(null);
+        setError("");
+        setUseRealData(false);
+        onStatusChange?.({
+          level: "info",
+          text: "Токен очищено. Використовуються локальні або демо-дані.",
+        });
+        return;
+      }
 
-  const fetchClientInfo = useCallback(async (tokenValue: string) => {
-    if (!tokenValue.trim()) {
-      setClientInfo(null);
+      setIsVerifying(true);
       setError("");
-      return;
-    }
+      onStatusChange?.({
+        level: "info",
+        text: "Синхронізація з Monobank: перевіряю токен...",
+      });
 
-    setIsVerifying(true);
-    setError("");
+      let syncPayload: { token: string; clientInfo: ClientInfo; source: AccountSource } | null = null;
+      try {
+        const data = await fetchMonobankClientInfo(tokenValue);
+        const nextSourceMap = mergeAccountSourceMap(accountSourceMap, data.accounts ?? [], "settings");
 
-    try {
-      const response = await fetch(
-        "https://api.monobank.ua/personal/client-info",
-        { headers: { "X-Token": tokenValue } }
-      );
+        setClientInfo(data);
+        setAccountSourceMap(nextSourceMap);
+        setUseRealData(true);
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Недійсний токен");
-        } else if (response.status === 429) {
-          throw new Error("Забагато запитів. Спробуйте за хвилину.");
-        } else {
-          throw new Error(`Помилка API: ${response.status}`);
-        }
+        updateStoredData((current) => ({
+          ...current,
+          token: tokenValue,
+          useRealData: true,
+          clientInfo: data,
+          accountSourceMap: nextSourceMap,
+          sync: {
+            ...(current.sync ?? createDefaultSyncState()),
+            status: "idle",
+            needsInitialSync: true,
+            lastError: undefined,
+          },
+          timestamp: Date.now(),
+        }));
+
+        onStatusChange?.({
+          level: "success",
+          text: `Monobank підключено: ${data.name}`,
+        });
+        syncPayload = {
+          token: tokenValue,
+          clientInfo: data,
+          source: "settings",
+        };
+      } catch (fetchError) {
+        setClientInfo(null);
+        setUseRealData(false);
+        const errorMessage = getErrorMessage(fetchError);
+        setError(errorMessage);
+
+        updateStoredData((current) => ({
+          ...current,
+          token: tokenValue,
+          useRealData: false,
+          clientInfo: null,
+          sync: {
+            ...(current.sync ?? createDefaultSyncState()),
+            status: "error",
+            needsInitialSync: false,
+            lastError: errorMessage,
+          },
+          timestamp: Date.now(),
+        }));
+
+        onStatusChange?.({
+          level: "error",
+          text: `Помилка синхронізації: ${errorMessage}`,
+        });
+      } finally {
+        setIsVerifying(false);
       }
 
-      const data = await response.json();
-      setClientInfo(data);
-      updateStoredData({ token: tokenValue, useRealData: true, clientInfo: data });
-      setUseRealData(true);
-    } catch (err) {
-      setClientInfo(null);
-      setError(err instanceof Error ? err.message : "Не вдалося перевірити токен");
-      updateStoredData({ token: tokenValue, useRealData: false, clientInfo: null });
-      setUseRealData(false);
-    } finally {
-      setIsVerifying(false);
-    }
-  }, []);
+      if (syncPayload) {
+        void Promise.resolve(onTokenConnected(syncPayload)).catch((syncError) => {
+          const errorMessage = getErrorMessage(syncError);
+          setError(errorMessage);
+          onStatusChange?.({
+            level: "error",
+            text: `Помилка синхронізації: ${errorMessage}`,
+          });
+        });
+      }
+    },
+    [accountSourceMap, onStatusChange, onTokenConnected]
+  );
 
   const handleTokenChange = (value: string) => {
     setToken(value);
@@ -132,7 +267,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
     }
 
     debounceRef.current = setTimeout(() => {
-      fetchClientInfo(value);
+      void fetchClientInfo(value);
     }, 800);
   };
 
@@ -150,8 +285,27 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
     setToken("");
     setError("");
     setClientInfo(null);
-    updateStoredData({ token: "", useRealData: false, clientInfo: null });
-    onTokenUpdate([-1] as any); // Special signal to load sample data
+
+    updateStoredData((current) => ({
+      ...current,
+      token: "",
+      useRealData: false,
+      clientInfo: null,
+      dataOrigin: "demo",
+      sync: {
+        ...(current.sync ?? createDefaultSyncState()),
+        status: "idle",
+        needsInitialSync: false,
+        lastError: undefined,
+      },
+      timestamp: Date.now(),
+    }));
+
+    onUseSampleData();
+    onStatusChange?.({
+      level: "info",
+      text: "Увімкнено демо-режим (без синхронізації Monobank).",
+    });
   };
 
   const clearStoredData = () => {
@@ -161,21 +315,23 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
 
     localStorage.removeItem("monobankData");
     localStorage.removeItem("hasSeenOnboarding");
-    localStorage.removeItem("onboarding-token");
+    localStorage.removeItem(ONBOARDING_TOKEN_KEY);
     localStorage.removeItem("monobank-theme");
+
     setToken("");
     setError("");
     setClientInfo(null);
     setUseRealData(false);
-    onTokenUpdate([]); // Signal to clear all data
+    setAccountSourceMap({});
+    onClearData();
+    onStatusChange?.({
+      level: "info",
+      text: "Дані скинуто. Перехід до онбордингу...",
+    });
     window.location.assign(`${import.meta.env.BASE_URL}onboarding`);
   };
 
-  const dataSourceLabel = useRealData && clientInfo
-    ? clientInfo.name
-    : useRealData
-      ? "Monobank API"
-      : "Демо-дані";
+  const dataSourceLabel = useRealData && clientInfo ? clientInfo.name : useRealData ? "Monobank API" : "Демо-дані";
 
   return (
     <div className="space-y-6">
@@ -183,16 +339,12 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
       <div className="dashboard-panel p-6">
         <h2 className="text-sm font-medium text-gray-500 mb-3">Джерело даних</h2>
         <div className="flex items-center gap-3">
-          <span className={`flex h-9 w-9 items-center justify-center rounded-full ${
-            useRealData
-              ? "bg-green-100 text-green-600"
-              : "bg-amber-100 text-amber-600"
-          }`}>
-            {useRealData ? (
-              <CheckCircleIcon className="h-5 w-5" />
-            ) : (
-              <BeakerIcon className="h-5 w-5" />
-            )}
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+              useRealData ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+            }`}
+          >
+            {useRealData ? <CheckCircleIcon className="h-5 w-5" /> : <BeakerIcon className="h-5 w-5" />}
           </span>
           <div>
             <p className="text-base font-semibold text-gray-900">{dataSourceLabel}</p>
@@ -201,8 +353,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
                 ? `${clientInfo.accounts?.length || 0} рахунків`
                 : useRealData
                   ? "Підключено до API"
-                  : "Згенеровані тестові транзакції"
-              }
+                  : "Згенеровані тестові транзакції"}
             </p>
           </div>
         </div>
@@ -211,12 +362,8 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
       {/* API Token Section */}
       <div className="dashboard-panel p-6">
         <div className="mb-4">
-          <h2 className="text-base font-semibold text-gray-900">
-            API Monobank
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Вставте токен &mdash; підключення перевіриться автоматично.
-          </p>
+          <h2 className="text-base font-semibold text-gray-900">API Monobank</h2>
+          <p className="mt-1 text-sm text-gray-500">Вставте токен &mdash; підключення перевіриться автоматично.</p>
         </div>
 
         <div className="space-y-4">
@@ -255,17 +402,24 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
             <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
               <p className="font-medium">{clientInfo.name}</p>
               {clientInfo.accounts?.length > 0 && (
-                <div className="mt-1.5 space-y-0.5 text-xs text-green-700">
+                <div className="mt-2 space-y-2 text-xs text-green-700">
                   {clientInfo.accounts.map((acc) => (
-                    <p key={acc.id}>
-                      {acc.type === "black" ? "Чорна картка" :
-                       acc.type === "white" ? "Біла картка" :
-                       acc.type === "platinum" ? "Platinum" :
-                       acc.type === "fop" ? "ФОП" :
-                       acc.type === "yellow" ? "Жовта картка" :
-                       acc.type}
-                      {acc.maskedPan?.[0] && ` (${acc.maskedPan[0]})`}
-                    </p>
+                    <div key={acc.id} className="rounded border border-green-200 bg-white p-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-medium text-green-900">
+                          {formatAccountType(acc.type)}
+                          {acc.maskedPan?.[0] && ` (${acc.maskedPan[0]})`}
+                        </p>
+                        <p className="font-semibold text-green-900">{formatMoney(acc.balance, acc.currencyCode)}</p>
+                      </div>
+                      <p className="mt-1 break-all text-[11px] text-green-700">{acc.iban}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-green-700">
+                        {typeof acc.creditLimit === "number" && (
+                          <span>Кредитний ліміт: {formatMoney(acc.creditLimit, acc.currencyCode)}</span>
+                        )}
+                        <span>Source: {formatAccountSource(accountSourceMap[acc.id]?.source)}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -273,10 +427,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
           )}
 
           {!hasTransactions && (
-            <button
-              onClick={switchToSampleData}
-              className="settings-btn-secondary"
-            >
+            <button onClick={switchToSampleData} className="settings-btn-secondary">
               <BeakerIcon className="h-4 w-4" aria-hidden="true" />
               Використати демо-дані
             </button>
@@ -297,9 +448,7 @@ export const ApiConfigPanel: React.FC<ApiConfigPanelProps> = ({ onTokenUpdate, h
           <h3 className="text-sm font-semibold text-red-800">Небезпечна зона</h3>
         </div>
         <div className="px-6 py-4">
-          <p className="text-sm text-gray-600 mb-3">
-            Скинути всі налаштування, видалити транзакції та почати наново.
-          </p>
+          <p className="text-sm text-gray-600 mb-3">Скинути всі налаштування, видалити транзакції та почати наново.</p>
           <button
             onClick={clearStoredData}
             className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"

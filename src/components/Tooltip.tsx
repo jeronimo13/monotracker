@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 interface TooltipProps {
   content: string;
@@ -12,60 +12,75 @@ const Tooltip: React.FC<TooltipProps> = ({
   className = "",
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const triggerRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+
+  const setStaticTooltipPosition = useCallback(() => {
+    const triggerEl = triggerRef.current;
+    const tooltipEl = tooltipRef.current;
+    if (!triggerEl || !tooltipEl) {
+      return;
+    }
+
+    const triggerRect = triggerEl.getBoundingClientRect();
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const edgePadding = 8;
+    const offset = 8;
+
+    let x = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+    x = Math.max(edgePadding, Math.min(x, viewportWidth - tooltipRect.width - edgePadding));
+
+    let y = triggerRect.bottom + offset;
+    if (y + tooltipRect.height > viewportHeight - edgePadding) {
+      y = triggerRect.top - tooltipRect.height - offset;
+    }
+    y = Math.max(edgePadding, Math.min(y, viewportHeight - tooltipRect.height - edgePadding));
+
+    tooltipEl.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+    tooltipEl.style.opacity = "1";
+  }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (tooltipRef.current) {
-        const rect = tooltipRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
+    if (!isVisible) {
+      return;
+    }
 
-        let x = e.clientX + 10;
-        let y = e.clientY - 10;
-
-        // Adjust position if tooltip would go off screen
-        if (x + rect.width > viewportWidth) {
-          x = e.clientX - rect.width - 10;
-        }
-        if (y + rect.height > viewportHeight) {
-          y = e.clientY - rect.height - 10;
-        }
-
-        setPosition({ x, y });
+    setStaticTooltipPosition();
+    return () => {
+      const tooltipEl = tooltipRef.current;
+      if (tooltipEl) {
+        tooltipEl.style.opacity = "0";
       }
     };
-
-    if (isVisible) {
-      document.addEventListener("mousemove", handleMouseMove);
-      return () => document.removeEventListener("mousemove", handleMouseMove);
-    }
-  }, [isVisible]);
+  }, [isVisible, setStaticTooltipPosition]);
 
   return (
-    <div
+    <span
       ref={triggerRef}
-      className={className}
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
+      className={`inline-flex ${className}`}
+      onPointerEnter={() => setIsVisible(true)}
+      onPointerLeave={() => setIsVisible(false)}
     >
       {children}
       {isVisible && (
         <div
           ref={tooltipRef}
-          className="fixed z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg whitespace-nowrap pointer-events-none"
+          className="fixed left-0 top-0 z-50 max-w-80 rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg whitespace-pre-line pointer-events-none"
           style={{
-            left: position.x,
-            top: position.y,
+            transform: "translate3d(-9999px, -9999px, 0)",
+            opacity: 0,
+            willChange: "transform",
           }}
         >
           {content}
         </div>
       )}
-    </div>
+    </span>
   );
 };
 
-export default Tooltip;
+Tooltip.displayName = "Tooltip";
+
+export default React.memo(Tooltip);

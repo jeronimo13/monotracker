@@ -6,6 +6,7 @@ export interface UrlFilters {
   mccCodes?: string[];
   category?: string;
   categories?: string[];
+  source?: string;
   search?: string;
   dateRange?: string; // encoded as "1d", "7d", "2024-01-01to2024-01-31", etc.
 }
@@ -25,6 +26,9 @@ export const parseFiltersFromUrl = (searchParams: URLSearchParams): UrlFilters =
   
   const category = searchParams.get('category');
   if (category) filters.category = category;
+
+  const source = searchParams.get('source');
+  if (source) filters.source = source;
   
   const search = searchParams.get('search');
   if (search) filters.search = search;
@@ -59,6 +63,7 @@ export const filtersToUrlParams = (filters: Filters, dateRangeString?: string): 
   if (filters.description) params.set('description', filters.description);
   if (filters.mcc) params.set('mcc', filters.mcc);
   if (filters.category) params.set('category', filters.category);
+  if (filters.source) params.set('source', filters.source);
   if (filters.search) params.set('search', filters.search);
   
   // Array filters (comma-separated)

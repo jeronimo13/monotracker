@@ -20,6 +20,7 @@ const DEMO_DAYS = 30;
 const MIN_TRANSACTIONS_PER_DAY = 3;
 const MAX_TRANSACTIONS_PER_DAY = 6;
 const UAH_CURRENCY_CODE = 980;
+const DEMO_ACCOUNT_ID = "demo-account";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const toUInt32 = (value: number): number => value >>> 0;
@@ -78,6 +79,7 @@ export const generateDemoTransactions = (baseDate: Date = new Date()): Transacti
 
       generated.push({
         id,
+        accountId: DEMO_ACCOUNT_ID,
         time,
         description: template.description,
         mcc: template.mcc,
