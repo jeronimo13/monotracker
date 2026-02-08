@@ -68,7 +68,7 @@ If this file conflicts with `README.md`, trust `package.json`, config files, and
   - `onboarding-token`
 - `StoredData` shape is defined in `src/types/index.ts`:
   - `token`, `transactions`, `timestamp`, `useRealData`, `categories`
-- Default fallback data comes from `src/data/transactions.json`.
+- Default fallback data comes from `src/data/demo-transactions.json` via generator logic in `src/data/generateDemoTransactions.ts`.
 - Stored data TTL logic is 24 hours in `useAppData`.
 
 ## API Behavior Actually Implemented

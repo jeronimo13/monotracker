@@ -1,0 +1,184 @@
+{
+  "templates": [
+    {
+      "description": "Супермаркет",
+      "mcc": 5411,
+      "category": "Їжа",
+      "kind": "expense",
+      "minAmount": 18000,
+      "maxAmount": 145000,
+      "comment": "Щоденні продукти",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Кав'ярня",
+      "mcc": 5814,
+      "category": "Їжа",
+      "kind": "expense",
+      "minAmount": 4500,
+      "maxAmount": 18000,
+      "comment": "Кава та перекус",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Ресторан",
+      "mcc": 5812,
+      "category": "Їжа",
+      "kind": "expense",
+      "minAmount": 24000,
+      "maxAmount": 120000,
+      "comment": "Вечеря",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Аптека",
+      "mcc": 5912,
+      "category": "Здоров'я",
+      "kind": "expense",
+      "minAmount": 9000,
+      "maxAmount": 68000,
+      "comment": "Ліки та засоби",
+      "cashbackBps": 100
+    },
+    {
+      "description": "АЗС",
+      "mcc": 5541,
+      "category": "Транспорт",
+      "kind": "expense",
+      "minAmount": 180000,
+      "maxAmount": 420000,
+      "comment": "Заправка авто",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Таксі",
+      "mcc": 4121,
+      "category": "Транспорт",
+      "kind": "expense",
+      "minAmount": 12000,
+      "maxAmount": 78000,
+      "comment": "Поїздка містом",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Метро",
+      "mcc": 4111,
+      "category": "Транспорт",
+      "kind": "expense",
+      "minAmount": 800,
+      "maxAmount": 1600,
+      "comment": "Проїзд",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Комунальні послуги",
+      "mcc": 4900,
+      "category": "Комунальні послуги",
+      "kind": "expense",
+      "minAmount": 95000,
+      "maxAmount": 460000,
+      "comment": "Оплата рахунків",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Мобільний оператор",
+      "mcc": 4814,
+      "category": "Комунальні послуги",
+      "kind": "expense",
+      "minAmount": 12000,
+      "maxAmount": 85000,
+      "comment": "Поповнення зв'язку",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Онлайн-підписка",
+      "mcc": 4899,
+      "category": "Підписки",
+      "kind": "expense",
+      "minAmount": 3900,
+      "maxAmount": 32000,
+      "comment": "Щомісячний сервіс",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Маркетплейс",
+      "mcc": 5999,
+      "category": "Покупки",
+      "kind": "expense",
+      "minAmount": 16000,
+      "maxAmount": 180000,
+      "comment": "Онлайн-покупка",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Магазин одягу",
+      "mcc": 5651,
+      "category": "Покупки",
+      "kind": "expense",
+      "minAmount": 25000,
+      "maxAmount": 260000,
+      "comment": "Покупка одягу",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Книгарня",
+      "mcc": 5942,
+      "category": "Освіта",
+      "kind": "expense",
+      "minAmount": 6000,
+      "maxAmount": 98000,
+      "comment": "Книги та матеріали",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Кінотеатр",
+      "mcc": 7832,
+      "category": "Розваги",
+      "kind": "expense",
+      "minAmount": 15000,
+      "maxAmount": 76000,
+      "comment": "Дозвілля",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Фітнес-клуб",
+      "mcc": 7997,
+      "category": "Здоров'я",
+      "kind": "expense",
+      "minAmount": 22000,
+      "maxAmount": 180000,
+      "comment": "Тренування",
+      "cashbackBps": 100
+    },
+    {
+      "description": "Зарахування зарплати",
+      "mcc": 0,
+      "category": "Дохід",
+      "kind": "income",
+      "minAmount": 2200000,
+      "maxAmount": 4200000,
+      "comment": "Виплата роботодавця",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Переказ від клієнта",
+      "mcc": 0,
+      "category": "Дохід",
+      "kind": "income",
+      "minAmount": 120000,
+      "maxAmount": 980000,
+      "comment": "Оплата послуг",
+      "cashbackBps": 0
+    },
+    {
+      "description": "Повернення коштів",
+      "mcc": 0,
+      "category": "Дохід",
+      "kind": "income",
+      "minAmount": 9000,
+      "maxAmount": 160000,
+      "comment": "Refund",
+      "cashbackBps": 0
+    }
+  ]
+}

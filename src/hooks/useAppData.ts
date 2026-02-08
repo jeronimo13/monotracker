@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Transaction, StoredData } from "../types";
-import transactionData from "../data/transactions.json";
+import { generateDemoTransactions } from "../data/generateDemoTransactions";
 
 interface AppData {
   transactions: Transaction[];
@@ -86,7 +86,7 @@ export const useAppData = (): UseAppDataReturn => {
     }
 
     // Load sample data if no stored data and no transactions currently loaded
-    setTransactionsState(transactionData.transactions);
+    setTransactionsState(generateDemoTransactions());
   };
 
   // Clean up unused categories
@@ -156,7 +156,7 @@ export const useAppData = (): UseAppDataReturn => {
   };
 
   const loadSampleData = () => {
-    setTransactionsState(transactionData.transactions);
+    setTransactionsState(generateDemoTransactions());
     setCategoriesState({});
   };
 
