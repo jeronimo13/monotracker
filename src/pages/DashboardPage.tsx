@@ -25,6 +25,8 @@ import { ImportExportButtons } from "../components/ImportExportButtons";
 import { RulesPanel } from "../components/RulesPanel";
 import { ApiConfigPanel } from "../components/ApiConfigPanel";
 import { DateRangeFilter } from "../components/DateRangeFilter";
+import ThemeToggle from "../components/ThemeToggle";
+import SettingsButton from "../components/SettingsButton";
 
 const DashboardPage: React.FC = () => {
   // Core data hooks
@@ -267,14 +269,14 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex">
       {/* Left panel */}
       {!isSettingsView && (
-      <div className="w-1/5 h-screen overflow-y-auto bg-gray-50 p-4 sticky top-0">
+      <div className="w-1/5 h-screen overflow-y-auto bg-gray-50 p-3 sticky top-0">
             {/* Date Range Filter */}
-            <div className="dashboard-panel p-4 mb-6">
+            <div className="dashboard-panel p-3 mb-2">
               <DateRangeFilter />
             </div>
 
             {/* Rules Panel */}
-            <div className="dashboard-panel p-4 mb-6">
+            <div className="dashboard-panel p-3 mb-2">
               <RulesPanel
                 rules={rules}
                 filters={filters}
@@ -289,8 +291,8 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Special Filters */}
-            <div className="dashboard-panel p-4 mb-6">
-              <div className="flex flex-col gap-4">
+            <div className="dashboard-panel p-3 mb-2">
+              <div className="flex flex-col gap-3">
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">
@@ -333,7 +335,7 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="dashboard-panel p-4 mb-6">
+            <div className="dashboard-panel p-3 mb-2">
               <SidebarCategoryFacets
                 transactions={transactions}
                 selectedCategories={filters.categories}
@@ -343,7 +345,7 @@ const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div className="dashboard-panel p-4 mb-6">
+            <div className="dashboard-panel p-3 mb-2">
               <SidebarMccFacets
                 transactions={transactions}
                 selectedMccCodes={filters.mccCodes}
@@ -357,11 +359,17 @@ const DashboardPage: React.FC = () => {
       )}
 
       {/* Right panel */}
-      <div className="flex-1 h-screen overflow-y-auto p-4">
+      <div className="flex-1 h-screen flex flex-col p-3">
             {isSettingsView ? (
-              <div className="mx-auto max-w-2xl py-2">
-                <div className="mb-8">
+              <div className="mx-auto max-w-2xl py-2 overflow-y-auto flex-1">
+                <div className="flex items-center justify-between mb-4">
                   <h1 className="text-2xl font-bold text-gray-900">Налаштування</h1>
+                  <div className="flex items-center gap-2">
+                    <SettingsButton />
+                    <ThemeToggle />
+                  </div>
+                </div>
+                <div className="mb-4">
                   <p className="mt-1 text-sm text-gray-500">
                     Керуйте підключенням до API, імпортом та експортом даних.
                   </p>
@@ -385,14 +393,19 @@ const DashboardPage: React.FC = () => {
               </div>
             ) : (
               <>
-            <div className="dashboard-panel p-6 mb-6">
+            {/* Stats bar + controls */}
+            <div className="dashboard-panel px-3 py-2 mb-2 shrink-0 flex items-center justify-between">
               <StatisticsScene filteredTransactions={filteredTransactions} />
+              <div className="flex items-center gap-2">
+                <SettingsButton />
+                <ThemeToggle />
+              </div>
             </div>
 
             {/* Filters Bar */}
-            <div className="dashboard-panel p-4 mb-6">
-              <div className="mb-4">
-                <div className="flex items-center gap-3">
+            <div className="dashboard-panel px-3 py-2 mb-2 shrink-0">
+              <div className="mb-2">
+                <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <input
                       type="text"
@@ -404,7 +417,7 @@ const DashboardPage: React.FC = () => {
                         }))
                       }
                       placeholder="Пошук по опису, коментарю або категорії..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
                     />
                   </div>
                   {filters.search && (
@@ -412,7 +425,7 @@ const DashboardPage: React.FC = () => {
                       onClick={() =>
                         setFilters((prev) => ({ ...prev, search: "" }))
                       }
-                      className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                      className="px-2 py-1 text-gray-500 hover:text-gray-700"
                       title="Очистити пошук"
                     >
                       ×
@@ -423,7 +436,7 @@ const DashboardPage: React.FC = () => {
 
               {/* Category Input */}
               {showCategoryInput && (
-                <div className="mb-3 p-3 bg-purple-50 rounded-lg">
+                <div className="mb-2 p-2 bg-purple-50 rounded">
                   <div className="flex gap-2 relative">
                     <div className="flex-1 relative">
                       <input
@@ -433,14 +446,14 @@ const DashboardPage: React.FC = () => {
                         onChange={(e) => handleCategoryInputChange(e.target.value)}
                         onKeyDown={handleCategoryKeyDown}
                         placeholder="Введіть назву категорії"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
                       />
                       {showCategoryDropdown && (
                         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                           {filteredCategories.map((category, index) => (
                             <div
                               key={category}
-                              className={`px-4 py-2 cursor-pointer hover:bg-gray-100 text-black ${
+                              className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 text-black ${
                                 index === selectedCategoryIndex
                                   ? "bg-blue-100"
                                   : ""
@@ -457,7 +470,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                     <button
                       onClick={addCategoryToFilteredTransactions}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                      className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                     >
                       Додати
                     </button>
@@ -465,7 +478,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex flex-wrap gap-1.5 items-center">
                 {filters.description && (
                   <ChipComponent
                     label={`Опис: ${filters.description}`}
@@ -533,7 +546,7 @@ const DashboardPage: React.FC = () => {
                 ) && (
                   <button
                     onClick={clearAllFilters}
-                    className="text-sm text-gray-600 hover:text-gray-800 px-2 py-1 rounded border border-gray-300 hover:bg-gray-50"
+                    className="text-xs text-gray-600 hover:text-gray-800 px-2 py-0.5 rounded border border-gray-300 hover:bg-gray-50"
                   >
                     Очистити все
                   </button>
@@ -542,8 +555,8 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="dashboard-panel overflow-hidden">
-              <div className="px-6 py-4">
+            <div className="dashboard-panel overflow-hidden flex-1 flex flex-col min-h-0">
+              <div className="px-3 py-2 shrink-0 flex items-center justify-between">
                 <TabSwitcher
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
@@ -552,190 +565,190 @@ const DashboardPage: React.FC = () => {
                     { id: "monthly", label: "Щомісячний аналіз" },
                   ]}
                 />
+                {activeTab === "transactions" && (
+                  <span className="text-xs text-gray-500 ml-4 whitespace-nowrap">
+                    {getTransactionLabel(totalCount)}
+                  </span>
+                )}
               </div>
 
               {activeTab === "transactions" && (
-                <>
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {getTransactionLabel(totalCount)}
-                    </h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Дата
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Опис
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            MCC
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Категорія
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Сума в валюті
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Сума
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedDates.map((dateKey) => (
-                          <React.Fragment key={dateKey}>
-                            <tr className="bg-gray-100">
-                              <td
-                                colSpan={6}
-                                className="px-6 py-3 text-sm text-gray-900"
-                              >
-                                {formatDateHeader(dateKey)}
-                              </td>
-                            </tr>
-                            {groupedTransactions[dateKey].map((transaction, index) => (
-                              <tr
-                                key={transaction.id}
-                                className={`${
-                                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                } hover:bg-gray-100 transition-colors duration-150`}
-                              >
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  <div className="flex items-center space-x-2">
-                                    <span>{formatDate(transaction.time)}</span>
-                                    {transaction.hold && (
-                                      <Tooltip content="Транзакція утримана (не завершена)">
-                                        <span className="text-yellow-600 text-xs">⏳</span>
-                                      </Tooltip>
-                                    )}
-                                    {(transaction.receiptId || transaction.invoiceId) && (
-                                      <Tooltip content={`Є чек/рахунок: ${transaction.receiptId || transaction.invoiceId}`}>
-                                        <span className="text-blue-600 text-xs">🧾</span>
-                                      </Tooltip>
-                                    )}
-                                    {transaction.counterEdrpou && (
-                                      <Tooltip content={`Бізнес транзакція: ЄДРПОУ ${transaction.counterEdrpou}`}>
-                                        <span className="text-purple-600 text-xs">💼</span>
-                                      </Tooltip>
-                                    )}
-                                    {transaction.counterIban && (
-                                      <Tooltip content={`Переказ: ${transaction.counterIban}`}>
-                                        <span className="text-green-600 text-xs">🏦</span>
-                                      </Tooltip>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900">
-                                  <div>
-                                    <Tooltip content={
-                                      [
-                                        `Опис: ${transaction.description}`,
-                                        transaction.comment && `Коментар: ${transaction.comment}`,
-                                        transaction.receiptId && `ID чеку: ${transaction.receiptId}`,
-                                        transaction.invoiceId && `ID рахунку: ${transaction.invoiceId}`,
-                                        transaction.originalMcc !== transaction.mcc && `Оригінальний MCC: ${transaction.originalMcc}`
-                                      ].filter(Boolean).join('\n')
-                                    }>
-                                      <button
-                                        onClick={() =>
-                                          addFilter("description", transaction.description)
-                                        }
-                                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
-                                      >
-                                        {transaction.description}
-                                      </button>
+                <div className="overflow-y-auto flex-1">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Дата
+                        </th>
+                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Опис
+                        </th>
+                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          MCC
+                        </th>
+                        <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Категорія
+                        </th>
+                        <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Сума в валюті
+                        </th>
+                        <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Сума
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {sortedDates.map((dateKey) => (
+                        <React.Fragment key={dateKey}>
+                          <tr className="bg-gray-100">
+                            <td
+                              colSpan={6}
+                              className="px-3 py-1 text-xs font-medium text-gray-900"
+                            >
+                              {formatDateHeader(dateKey)}
+                            </td>
+                          </tr>
+                          {groupedTransactions[dateKey].map((transaction, index) => (
+                            <tr
+                              key={transaction.id}
+                              className={`${
+                                index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                              } hover:bg-gray-100 transition-colors duration-150`}
+                            >
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-900">
+                                <div className="flex items-center space-x-1">
+                                  <span>{formatDate(transaction.time)}</span>
+                                  {transaction.hold && (
+                                    <Tooltip content="Транзакція утримана (не завершена)">
+                                      <span className="text-yellow-600 text-xs">⏳</span>
                                     </Tooltip>
-                                    {transaction.comment && (
-                                      <div className="text-gray-500 text-xs mt-1">
-                                        {transaction.comment}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500">
-                                  <div>
-                                    <button
-                                      onClick={() =>
-                                        addFilter("mcc", transaction.mcc.toString())
-                                      }
-                                      className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                                    >
-                                      {transaction.mcc || "-"}
-                                    </button>
-                                    {getMccDescription(transaction.mcc) && (
-                                      <Tooltip content={getMccDescription(transaction.mcc)}>
-                                        <div className="text-xs text-gray-400 mt-1 truncate max-w-32 pointer-events-none">
-                                          {getMccDescription(transaction.mcc)}
-                                        </div>
-                                      </Tooltip>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <button
-                                    onClick={() =>
-                                      addFilter("category", transaction.category || "")
-                                    }
-                                    className="text-purple-600 hover:text-purple-800 hover:underline cursor-pointer"
-                                  >
-                                    {transaction.category || "-"}
-                                  </button>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
-                                  {transaction.operationAmount !== transaction.amount ? (
-                                    <span>
-                                      {transaction.operationAmount > 0 ? "+" : ""}
-                                      {formatOriginalAmount(transaction.operationAmount)}
-                                      <span className="text-xs ml-1">
-                                        {getCurrencyCode(transaction.currencyCode)}
-                                      </span>
-                                    </span>
-                                  ) : (
-                                    "-"
                                   )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                  {(transaction.receiptId || transaction.invoiceId) && (
+                                    <Tooltip content={`Є чек/рахунок: ${transaction.receiptId || transaction.invoiceId}`}>
+                                      <span className="text-blue-600 text-xs">🧾</span>
+                                    </Tooltip>
+                                  )}
+                                  {transaction.counterEdrpou && (
+                                    <Tooltip content={`Бізнес транзакція: ЄДРПОУ ${transaction.counterEdrpou}`}>
+                                      <span className="text-purple-600 text-xs">💼</span>
+                                    </Tooltip>
+                                  )}
+                                  {transaction.counterIban && (
+                                    <Tooltip content={`Переказ: ${transaction.counterIban}`}>
+                                      <span className="text-green-600 text-xs">🏦</span>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 text-xs text-gray-900">
+                                <div>
                                   <Tooltip content={
                                     [
-                                      `Сума: ${formatAmount(transaction.amount)}`,
-                                      `Залишок після: ${formatAmount(transaction.balance)}`,
-                                      transaction.commissionRate > 0 && `Комісія: ${transaction.commissionRate}%`,
-                                      transaction.cashbackAmount > 0 && `Кешбек: ${formatAmount(transaction.cashbackAmount)}`,
-                                      transaction.operationAmount !== transaction.amount && `В валюті операції: ${formatOriginalAmount(transaction.operationAmount)} ${getCurrencyCode(transaction.currencyCode)}`
+                                      `Опис: ${transaction.description}`,
+                                      transaction.comment && `Коментар: ${transaction.comment}`,
+                                      transaction.receiptId && `ID чеку: ${transaction.receiptId}`,
+                                      transaction.invoiceId && `ID рахунку: ${transaction.invoiceId}`,
+                                      transaction.originalMcc !== transaction.mcc && `Оригінальний MCC: ${transaction.originalMcc}`
                                     ].filter(Boolean).join('\n')
                                   }>
-                                    <span
-                                      className={`font-medium cursor-help ${
-                                        transaction.amount > 0
-                                          ? "text-green-600"
-                                          : "text-red-600"
-                                      }`}
+                                    <button
+                                      onClick={() =>
+                                        addFilter("description", transaction.description)
+                                      }
+                                      className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
                                     >
-                                      {transaction.amount > 0 ? "+" : ""}
-                                      {formatAmount(transaction.amount)}
-                                    </span>
+                                      {transaction.description}
+                                    </button>
                                   </Tooltip>
-                                  {transaction.cashbackAmount > 0 && (
-                                    <div className="text-green-500 text-xs mt-1">
-                                      Кешбек: {formatAmount(transaction.cashbackAmount)}
+                                  {transaction.comment && (
+                                    <div className="text-gray-500 text-xs">
+                                      {transaction.comment}
                                     </div>
                                   )}
-                                </td>
-                              </tr>
-                            ))}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 text-xs text-gray-500">
+                                <div>
+                                  <button
+                                    onClick={() =>
+                                      addFilter("mcc", transaction.mcc.toString())
+                                    }
+                                    className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                  >
+                                    {transaction.mcc || "-"}
+                                  </button>
+                                  {getMccDescription(transaction.mcc) && (
+                                    <Tooltip content={getMccDescription(transaction.mcc)}>
+                                      <div className="text-xs text-gray-400 truncate max-w-32 pointer-events-none">
+                                        {getMccDescription(transaction.mcc)}
+                                      </div>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-gray-500">
+                                <button
+                                  onClick={() =>
+                                    addFilter("category", transaction.category || "")
+                                  }
+                                  className="text-purple-600 hover:text-purple-800 hover:underline cursor-pointer"
+                                >
+                                  {transaction.category || "-"}
+                                </button>
+                              </td>
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right text-gray-600">
+                                {transaction.operationAmount !== transaction.amount ? (
+                                  <span>
+                                    {transaction.operationAmount > 0 ? "+" : ""}
+                                    {formatOriginalAmount(transaction.operationAmount)}
+                                    <span className="text-xs ml-1">
+                                      {getCurrencyCode(transaction.currencyCode)}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  "-"
+                                )}
+                              </td>
+                              <td className="px-3 py-1.5 whitespace-nowrap text-xs text-right">
+                                <Tooltip content={
+                                  [
+                                    `Сума: ${formatAmount(transaction.amount)}`,
+                                    `Залишок після: ${formatAmount(transaction.balance)}`,
+                                    transaction.commissionRate > 0 && `Комісія: ${transaction.commissionRate}%`,
+                                    transaction.cashbackAmount > 0 && `Кешбек: ${formatAmount(transaction.cashbackAmount)}`,
+                                    transaction.operationAmount !== transaction.amount && `В валюті операції: ${formatOriginalAmount(transaction.operationAmount)} ${getCurrencyCode(transaction.currencyCode)}`
+                                  ].filter(Boolean).join('\n')
+                                }>
+                                  <span
+                                    className={`font-medium cursor-help ${
+                                      transaction.amount > 0
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                    }`}
+                                  >
+                                    {transaction.amount > 0 ? "+" : ""}
+                                    {formatAmount(transaction.amount)}
+                                  </span>
+                                </Tooltip>
+                                {transaction.cashbackAmount > 0 && (
+                                  <div className="text-green-500 text-xs">
+                                    Кешбек: {formatAmount(transaction.cashbackAmount)}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
               {activeTab === "monthly" && (
-                <MonthlyBreakdown transactions={filteredTransactions} />
+                <div className="overflow-y-auto flex-1">
+                  <MonthlyBreakdown transactions={filteredTransactions} />
+                </div>
               )}
             </div>
               </>

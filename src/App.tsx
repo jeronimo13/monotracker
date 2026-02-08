@@ -5,8 +5,6 @@ import SetupPage from "./pages/SetupPage";
 import DashboardPage from "./pages/DashboardPage";
 import { DateRangeProvider } from "./contexts/DateRangeContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import ThemeToggle from "./components/ThemeToggle";
-import SettingsButton from "./components/SettingsButton";
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
@@ -31,10 +29,6 @@ function App() {
     <ThemeProvider>
       <DateRangeProvider>
         <Router basename={basename}>
-          <div className="fixed right-4 top-4 z-50 flex items-center gap-2">
-            <SettingsButton />
-            <ThemeToggle />
-          </div>
           {showOnboarding ? (
             <Routes>
               <Route path="/onboarding" element={<OnboardingPage />} />

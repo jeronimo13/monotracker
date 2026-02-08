@@ -1,13 +1,11 @@
 import type { Transaction } from "../types";
-import StatCard from "../components/StatCard";
+import { formatAmount } from "../utils/formatters";
 
 interface StatisticsSceneProps {
   filteredTransactions: Transaction[];
 }
 
 const StatisticsScene = ({ filteredTransactions }: StatisticsSceneProps) => {
-  // Calculate all the values
-
   const income = filteredTransactions
     .filter((t) => t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
@@ -18,28 +16,16 @@ const StatisticsScene = ({ filteredTransactions }: StatisticsSceneProps) => {
       .reduce((sum, t) => sum + t.amount, 0)
   );
 
-  // Business logic for header text
-  const getHeaderText = (type: "income" | "expenses") => {
-    switch (type) {
-      case "income":
-        return "Прибуток";
-      case "expenses":
-        return "Витрати";
-    }
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <StatCard
-        color="green"
-        header={getHeaderText("income")}
-        amount={income}
-      />
-      <StatCard
-        color="red"
-        header={getHeaderText("expenses")}
-        amount={expenses}
-      />
+    <div className="flex items-center gap-6 text-sm">
+      <div className="flex items-center gap-1.5">
+        <span className="text-green-600 font-medium">Прибуток:</span>
+        <span className="text-green-900 font-bold">{formatAmount(income)}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-red-600 font-medium">Витрати:</span>
+        <span className="text-red-900 font-bold">{formatAmount(expenses)}</span>
+      </div>
     </div>
   );
 };
