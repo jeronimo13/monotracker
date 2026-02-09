@@ -18,3 +18,4 @@ Agents should keep it current without requiring repeated user reminders.
 - Prefer no duplicate intermediary status messages; move straight to concrete edits.
 - Налаштування формату списку транзакцій мають бути доступні в `Settings` (групувати по днях/місяцях/без групування).
 - У заголовку групи транзакцій (коли групування увімкнене) показувати суму та кількість транзакцій.
+- Коли користувач просить закомітити і запушити, завжди показувати message коміту у відповіді.
